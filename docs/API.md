@@ -46531,4 +46531,4 @@ This section contains all the interfaces in the codebase.
 
 *This documentation was automatically generated on 2025-08-20.*
 
-*Generated from 7696 code elements across 7 files.*
+*Generated from 7696 code elements across 10 files.*

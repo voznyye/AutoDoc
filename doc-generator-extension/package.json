@@ -1,7 +1,7 @@
 {
   "name": "doc-generator-extension",
   "displayName": "Auto Documentation Generator",
-  "description": "Automatically generates and maintains project documentation on every Git commit",
+  "description": "Automatically generates and maintains project documentation on every Git commit with support for TypeScript, JavaScript, Python, Java, and more",
   "version": "0.1.0",
   "publisher": "autodoc",
   "engines": {
