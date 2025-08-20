@@ -1,28 +1,42 @@
 {
-  "name": "doc-generator-extension",
+  "name": "auto-documentation-generator",
   "displayName": "Auto Documentation Generator",
-  "description": "Automatically generates and maintains project documentation on every Git commit with support for TypeScript, JavaScript, Python, Java, and more",
-  "version": "0.1.0",
-  "publisher": "autodoc",
+  "description": "AI-powered documentation generator that automatically creates and maintains project documentation with smart code analysis, free AI models, and Git integration",
+  "version": "1.2.0",
+  "publisher": "voznyye",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Documentation",
     "Other"
   ],
   "keywords": [
     "documentation",
     "auto-documentation",
+    "ai-documentation",
     "git",
     "markdown",
-    "readme"
+    "readme",
+    "typescript",
+    "javascript",
+    "python",
+    "java",
+    "api-docs",
+    "changelog",
+    "jsdoc",
+    "docstrings",
+    "code-analysis",
+    "openrouter",
+    "ai-powered"
   ],
   "activationEvents": [
     "onCommand:docGenerator.generateDocs",
     "onCommand:docGenerator.updateDocs",
     "onCommand:docGenerator.configureDocs",
     "onCommand:docGenerator.previewChanges",
+    "onCommand:docGenerator.generateWithAI",
+    "onCommand:docGenerator.configureAI",
+    "onCommand:docGenerator.testAI",
     "workspaceContains:**/.git"
   ],
   "main": "./out/extension.js",
@@ -46,6 +60,31 @@
       {
         "command": "docGenerator.previewChanges",
         "title": "Preview Changes",
+        "category": "Doc Generator"
+      },
+      {
+        "command": "docGenerator.generateWithAI",
+        "title": "Generate Documentation with AI",
+        "category": "Doc Generator"
+      },
+      {
+        "command": "docGenerator.configureAI",
+        "title": "Configure AI Settings",
+        "category": "Doc Generator"
+      },
+      {
+        "command": "docGenerator.testAI",
+        "title": "Test AI Connection",
+        "category": "Doc Generator"
+      },
+      {
+        "command": "docGenerator.generateSmartComments",
+        "title": "Generate Smart Comments for Selected Code",
+        "category": "Doc Generator"
+      },
+      {
+        "command": "docGenerator.generateSmartDescription",
+        "title": "Generate Smart Description for Selected Code",
         "category": "Doc Generator"
       }
     ],
@@ -103,6 +142,52 @@
             "commitMessage": "docs: update documentation"
           },
           "description": "Git integration settings"
+        },
+        "docGenerator.ai.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable AI-powered documentation generation"
+        },
+        "docGenerator.ai.openRouterApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenRouter API key for AI services (can also be set via OPENROUTER_API_KEY environment variable)"
+        },
+        "docGenerator.ai.defaultModel": {
+          "type": "string",
+          "default": "qwen/qwen-2-7b-instruct:free",
+          "enum": [
+            "meta-llama/llama-3.2-3b-instruct:free",
+            "meta-llama/llama-3.2-1b-instruct:free",
+            "qwen/qwen-2-7b-instruct:free",
+            "microsoft/phi-3-mini-128k-instruct:free",
+            "huggingface/zephyr-7b-beta:free"
+          ],
+          "description": "Default AI model to use for documentation generation"
+        },
+        "docGenerator.ai.enhanceExisting": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use AI to enhance existing documentation instead of replacing it"
+        },
+        "docGenerator.ai.includeExamples": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include code examples in AI-generated documentation"
+        },
+        "docGenerator.ai.maxTokens": {
+          "type": "number",
+          "default": 4000,
+          "minimum": 100,
+          "maximum": 8000,
+          "description": "Maximum number of tokens for AI responses"
+        },
+        "docGenerator.ai.temperature": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2,
+          "description": "AI creativity level (0 = deterministic, 2 = very creative)"
         }
       }
     },
@@ -116,24 +201,23 @@
       ]
     },
     "menus": {
-      "commandPalette": [
+      "docGenerator.aiSubmenu": [
         {
-          "command": "docGenerator.generateDocs",
-          "when": "workspaceFolderCount > 0"
+          "command": "docGenerator.generateSmartComments",
+          "when": "editorHasSelection"
         },
         {
-          "command": "docGenerator.updateDocs",
-          "when": "workspaceFolderCount > 0"
-        },
-        {
-          "command": "docGenerator.configureDocs"
-        },
-        {
-          "command": "docGenerator.previewChanges",
-          "when": "workspaceFolderCount > 0"
+          "command": "docGenerator.generateSmartDescription",
+          "when": "editorHasSelection"
         }
       ]
-    }
+    },
+    "submenus": [
+      {
+        "id": "docGenerator.aiSubmenu",
+        "label": "🤖 AI Documentation"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -145,6 +229,7 @@
     "lint:fix": "eslint src --ext ts --fix"
   },
   "devDependencies": {
+    "@types/dotenv": "^6.1.1",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.80.0",
@@ -163,17 +248,23 @@
   "dependencies": {
     "@typescript-eslint/parser": "^6.0.0",
     "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^17.2.1",
     "markdown-it": "^13.0.0",
     "simple-git": "^3.19.0",
     "typescript": "^5.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/autodoc/doc-generator-extension.git"
+    "url": "https://github.com/voznyye/AutoDoc"
   },
   "bugs": {
-    "url": "https://github.com/autodoc/doc-generator-extension/issues"
+    "url": "https://github.com/voznyye/AutoDoc/issues"
   },
-  "homepage": "https://github.com/autodoc/doc-generator-extension#readme",
-  "icon": "media/icon.png"
+  "homepage": "https://github.com/voznyye/AutoDoc#readme",
+  "galleryBanner": {
+    "color": "#007ACC",
+    "theme": "dark"
+  },
+  "icon": "media/icon.png",
+  "license": "MIT"
 }

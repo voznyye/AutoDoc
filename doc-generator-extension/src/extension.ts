@@ -5,10 +5,13 @@ import { ConfigurationProvider } from './providers/configurationProvider';
 import { generateDocsCommand } from './commands/generateDocs';
 import { updateDocsCommand } from './commands/updateDocs';
 import { configureDocsCommand } from './commands/configureDocs';
+import { AICommands } from './commands/aiCommands';
+import { FirstTimeSetup } from './utils/firstTimeSetup';
 
 let documentationProvider: DocumentationProvider;
 let gitHookProvider: GitHookProvider;
 let configurationProvider: ConfigurationProvider;
+let aiCommands: AICommands;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Documentation Generator extension is now active!');
@@ -17,6 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
     documentationProvider = new DocumentationProvider(context);
     gitHookProvider = new GitHookProvider(context);
     configurationProvider = new ConfigurationProvider();
+    aiCommands = new AICommands(context);
 
     // Register commands
     const generateDocsDisposable = vscode.commands.registerCommand(
@@ -39,12 +43,50 @@ export function activate(context: vscode.ExtensionContext) {
         () => previewChanges()
     );
 
+    // Register AI commands
+    const generateWithAIDisposable = vscode.commands.registerCommand(
+        'docGenerator.generateWithAI',
+        () => aiCommands.generateWithAI()
+    );
+
+    const configureAIDisposable = vscode.commands.registerCommand(
+        'docGenerator.configureAI',
+        () => aiCommands.configureAI()
+    );
+
+    const testAIDisposable = vscode.commands.registerCommand(
+        'docGenerator.testAI',
+        () => aiCommands.testAI()
+    );
+
+    const generateSmartCommentsDisposable = vscode.commands.registerCommand(
+        'docGenerator.generateSmartComments',
+        () => aiCommands.generateSmartComments()
+    );
+
+    const generateSmartDescriptionDisposable = vscode.commands.registerCommand(
+        'docGenerator.generateSmartDescription',
+        () => aiCommands.generateSmartDescription()
+    );
+
+    // Hidden command for development/testing
+    const resetSetupDisposable = vscode.commands.registerCommand(
+        'docGenerator.resetSetup',
+        () => FirstTimeSetup.resetSetupState(context)
+    );
+
     // Add to subscriptions for proper cleanup
     context.subscriptions.push(
         generateDocsDisposable,
         updateDocsDisposable,
         configureDocsDisposable,
-        previewChangesDisposable
+        previewChangesDisposable,
+        generateWithAIDisposable,
+        configureAIDisposable,
+        testAIDisposable,
+        generateSmartCommentsDisposable,
+        generateSmartDescriptionDisposable,
+        resetSetupDisposable
     );
 
     // Initialize Git hooks if enabled
@@ -60,6 +102,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize status bar
     setupStatusBar(context);
+
+    // Check for first-time setup (don't block activation)
+    checkFirstTimeSetup(context);
 
     vscode.window.showInformationMessage('Documentation Generator is ready!');
 }
@@ -147,6 +192,41 @@ function setupStatusBar(context: vscode.ExtensionContext) {
     documentationProvider.onStatusChange((status: string) => {
         statusBarItem.text = `$(book) Docs: ${status}`;
     });
+}
+
+async function checkFirstTimeSetup(context: vscode.ExtensionContext): Promise<void> {
+    // Delay slightly to avoid interfering with activation
+    setTimeout(async () => {
+        try {
+            const isFirstTime = await FirstTimeSetup.isFirstTime(context);
+            if (isFirstTime) {
+                // Show a welcome message with option to set up AI
+                const choice = await vscode.window.showInformationMessage(
+                    '🎉 Welcome to Auto Documentation Generator!\n\n✨ This extension can automatically generate professional documentation for your projects.\n\n🤖 Want to enable AI-powered features?',
+                    'Setup AI Features',
+                    'Skip for Now',
+                    'Learn More'
+                );
+
+                switch (choice) {
+                    case 'Setup AI Features':
+                        await FirstTimeSetup.runSetup(context);
+                        break;
+                    case 'Learn More':
+                        await vscode.env.openExternal(vscode.Uri.parse('https://github.com/voznyye/AutoDoc#ai-features'));
+                        break;
+                    case 'Skip for Now':
+                        await context.globalState.update('docGenerator.setupSkipped', true);
+                        vscode.window.showInformationMessage(
+                            '📝 You can still use basic documentation features. Enable AI anytime with "Doc Generator: Configure AI Settings"'
+                        );
+                        break;
+                }
+            }
+        } catch (error) {
+            console.error('First-time setup check failed:', error);
+        }
+    }, 1000); // 1 second delay
 }
 
 function getPreviewWebviewContent(): string {
