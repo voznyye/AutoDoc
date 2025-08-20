@@ -1,77 +1,96 @@
-# AutoDoc - Auto Documentation Generation Project
+# 🤖 AI Documentation Generator - AutoDoc Project
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![VSCode](https://img.shields.io/badge/VSCode-1.80.0+-blue.svg)
+![AI Powered](https://img.shields.io/badge/AI-powered-purple.svg)
+![Refactored](https://img.shields.io/badge/refactored-v2.0.0-brightgreen.svg)
 
-This repository contains a full-featured plugin for VSCode and Cursor Pro that automatically generates and maintains project documentation on every Git commit.
+**🎉 MAJOR REFACTORING COMPLETE!** This repository contains a **streamlined, AI-powered VS Code/Cursor extension** that automatically generates and maintains comprehensive project documentation using intelligent AI analysis.
 
-## 📁 Project Structure
+## ⚡ What's New in v2.0.0
+
+**🎯 Focused AI-Only Approach:**
+- **2 main commands** (down from 10) - Generate & Update documentation  
+- **100% AI-powered** - No manual workflows
+- **Simplified setup** - Just API key + model selection
+- **8 essential settings** (down from 16) - Streamlined configuration
+- **Template-free** - AI generates dynamic, contextual content
+
+## 📁 Streamlined Project Structure (v2.0.0)
 
 ```
 AutoDoc/
-├── README.md                           # This file
-├── documentation-plugin-prompt.md      # Original technical specification
+├── README.md                           # 🆕 Updated project overview
+├── REFACTORING_SUMMARY.md              # 🆕 Complete refactoring details
+├── documentation-plugin-prompt.md      # Original technical specification  
 ├── USAGE_EXAMPLES.md                   # Usage examples for different projects
 ├── WORKFLOW_GUIDE.md                   # Team workflow guide
 ├── PUBLISHING_GUIDE.md                 # Publishing to VSCode Marketplace
 ├── QUICK_START.md                      # Quick start guide
-└── doc-generator-extension/             # Main VSCode plugin
-    ├── package.json                     # Package configuration
+└── doc-generator-extension/             # 🤖 Streamlined AI Plugin
+    ├── package.json                     # ✅ Updated v2.0.0 configuration
     ├── tsconfig.json                    # TypeScript configuration
     ├── webpack.config.js                # Build configuration
     ├── README.md                        # Plugin documentation
     ├── CHANGELOG.md                     # Change history
     ├── LICENSE                          # MIT License
-    ├── src/                             # Source code
-    │   ├── extension.ts                 # Main activation file
-    │   ├── commands/                    # Plugin commands
-    │   │   ├── generateDocs.ts          # Documentation generation
-    │   │   ├── updateDocs.ts            # Documentation updates
-    │   │   └── configureDocs.ts         # Configuration
-    │   ├── providers/                   # Providers
-    │   │   ├── documentationProvider.ts # Main provider
-    │   │   ├── gitHookProvider.ts       # Git integration
-    │   │   └── configurationProvider.ts # Configuration
-    │   ├── analyzers/                   # Code analyzers
-    │   │   └── codeAnalyzer.ts          # TypeScript/JavaScript analysis
-    │   ├── generators/                  # Documentation generators
-    │   │   ├── markdownGenerator.ts     # API documentation
-    │   │   ├── readmeGenerator.ts       # README generator
-    │   │   └── changelogGenerator.ts    # CHANGELOG generator
-    │   ├── utils/                       # Utilities
-    │   │   ├── gitUtils.ts              # Git operations
-    │   │   └── fileUtils.ts             # File operations
-    │   └── templates/                   # Documentation templates
-    │       ├── readme.template.md
-    │       ├── api.template.md
-    │       └── changelog.template.md
+    ├── src/                             # 🧹 Cleaned source code
+    │   ├── extension.ts                 # ✅ Simplified activation (2 commands)
+    │   ├── commands/
+    │   │   └── aiCommands.ts            # ✅ All AI operations centralized
+    │   ├── generators/
+    │   │   ├── readmeGenerator.ts       # ✅ Base generator class
+    │   │   └── aiEnhancedReadmeGenerator.ts # ✅ AI-powered generation
+    │   ├── providers/
+    │   │   ├── documentationProvider.ts # ✅ Core analysis (simplified)
+    │   │   └── gitHookProvider.ts       # ✅ Git integration (simplified)
+    │   ├── services/
+    │   │   └── aiService.ts             # ✅ Core AI integration
+    │   ├── analyzers/
+    │   │   └── codeAnalyzer.ts          # ✅ Project analysis
+    │   └── utils/                       # ✅ Essential utilities
+    │       ├── fileUtils.ts             # File operations
+    │       ├── gitUtils.ts              # Git operations  
+    │       ├── environmentManager.ts    # Secure API key management
+    │       └── firstTimeSetup.ts        # AI setup wizard
     ├── media/                           # Media files
     │   ├── icon.svg                     # Plugin icon
     │   └── icon.png                     # Plugin icon (PNG)
     └── out/                             # Compiled files
 ```
 
-## 🚀 Plugin Features
+### 🗑️ Removed in Refactoring:
+- ❌ `commands/generateDocs.ts` - Replaced by AI-only approach
+- ❌ `commands/updateDocs.ts` - Integrated into aiCommands.ts
+- ❌ `commands/configureDocs.ts` - Simplified to AI config only
+- ❌ `providers/configurationProvider.ts` - No longer needed
+- ❌ `generators/changelogGenerator.ts` - AI generates dynamically
+- ❌ `generators/markdownGenerator.ts` - AI generates dynamically  
+- ❌ `templates/` directory - AI creates content without templates
 
-### ✨ Core Features
-- **Automatic documentation generation** from source code
-- **Git integration** with pre-commit hooks
-- **Multi-language support**: TypeScript, JavaScript, Python, Java, C#, Go, Rust, PHP
-- **Multiple output formats**: README.md, API docs, CHANGELOG.md
-- **Highly configurable** through VSCode settings
+## 🚀 Streamlined AI Features (v2.0.0)
 
-### 🎨 User Interface
-- VSCode Command Palette integration
-- Status bar indicator
-- Web panel for preview
-- Configuration wizard
+### 🤖 AI-Powered Core Features
+- **🎯 2 Main Commands**: Generate Project Documentation & Update Documentation
+- **🧠 100% AI-Driven**: Uses free OpenRouter models for intelligent documentation
+- **🔄 Auto-Updates**: Monitors file changes and Git commits for documentation sync
+- **🌍 Universal Language Support**: AI automatically detects and analyzes any programming language
+- **📄 Dynamic Content**: No templates - AI generates contextual, human-readable documentation
+- **🔒 Secure Setup**: API keys stored only in system environment variables
 
-### 🔧 Technical Features
-- **AST parsing** for accurate code analysis
-- **JSDoc/docstrings** support
-- **Incremental updates** for large projects
-- **Caching** for performance optimization
+### 🎨 Simplified User Experience  
+- **⚡ One-Click Generation**: Single command creates comprehensive project docs
+- **📊 Real-Time Status**: Status bar shows AI operation progress
+- **🔧 Streamlined Config**: Simple AI model selection and basic preferences
+- **🎯 Smart Setup Wizard**: Guided first-time AI configuration
+
+### 🔧 AI Technical Features
+- **🔍 Intelligent Code Analysis**: Deep AST parsing for accurate project understanding
+- **📝 Context-Aware Generation**: AI analyzes project structure, dependencies, and code patterns
+- **🔄 Smart Updates**: AI preserves custom content while refreshing technical details
+- **⚡ Free AI Models**: 5 high-quality, free models optimized for documentation tasks
+- **🌐 Cross-Platform**: Works on Windows, macOS, and Linux
 - **Asynchronous processing** without UI blocking
 
 ## 📦 Installation and Usage

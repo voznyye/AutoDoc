@@ -1,8 +1,8 @@
 {
   "name": "auto-documentation-generator",
-  "displayName": "Auto Documentation Generator",
-  "description": "AI-powered documentation generator that automatically creates and maintains project documentation with smart code analysis, free AI models, and Git integration",
-  "version": "1.4.0",
+  "displayName": "AI Documentation Generator",
+  "description": "AI-powered VS Code/Cursor extension that automatically generates and maintains comprehensive project documentation using free AI models and intelligent code analysis",
+  "version": "2.0.0",
   "publisher": "voznyye",
   "engines": {
     "vscode": "^1.80.0"
@@ -11,152 +11,76 @@
     "Other"
   ],
   "keywords": [
-    "documentation",
-    "auto-documentation",
     "ai-documentation",
-    "git",
+    "auto-documentation",
+    "ai-powered",
+    "documentation-generator",
+    "project-documentation",
+    "readme-generator",
+    "code-analysis",
+    "openrouter",
+    "free-ai",
+    "git-integration",
     "markdown",
-    "readme",
     "typescript",
     "javascript",
     "python",
-    "java",
-    "api-docs",
-    "changelog",
-    "jsdoc",
-    "docstrings",
-    "code-analysis",
-    "openrouter",
-    "ai-powered"
+    "intelligent-docs"
   ],
   "activationEvents": [
-    "onCommand:docGenerator.generateDocs",
-    "onCommand:docGenerator.updateDocs",
-    "onCommand:docGenerator.configureDocs",
-    "onCommand:docGenerator.previewChanges",
-    "onCommand:docGenerator.generateWithAI",
-    "onCommand:docGenerator.configureAI",
-    "onCommand:docGenerator.testAI",
     "workspaceContains:**/.git"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "docGenerator.generateDocs",
-        "title": "Generate Documentation",
-        "category": "Doc Generator"
+        "command": "docGenerator.generateProjectDocs",
+        "title": "Generate Project Documentation",
+        "category": "AI Doc Generator",
+        "icon": "$(book)"
       },
       {
         "command": "docGenerator.updateDocs",
         "title": "Update Documentation",
-        "category": "Doc Generator"
-      },
-      {
-        "command": "docGenerator.configureDocs",
-        "title": "Configure Settings",
-        "category": "Doc Generator"
-      },
-      {
-        "command": "docGenerator.previewChanges",
-        "title": "Preview Changes",
-        "category": "Doc Generator"
-      },
-      {
-        "command": "docGenerator.generateWithAI",
-        "title": "Generate Documentation with AI",
-        "category": "Doc Generator"
+        "category": "AI Doc Generator",
+        "icon": "$(sync)"
       },
       {
         "command": "docGenerator.configureAI",
         "title": "Configure AI Settings",
-        "category": "Doc Generator"
-      },
-      {
-        "command": "docGenerator.testAI",
-        "title": "Test AI Connection",
-        "category": "Doc Generator"
-      },
-      {
-        "command": "docGenerator.generateSmartComments",
-        "title": "Generate Smart Comments for Selected Code",
-        "category": "Doc Generator"
-      },
-      {
-        "command": "docGenerator.generateSmartDescription",
-        "title": "Generate Smart Description for Selected Code",
-        "category": "Doc Generator"
-      },
-      {
-        "command": "docGenerator.generateProjectOverview",
-        "title": "Generate Comprehensive Project Overview",
-        "category": "Doc Generator"
+        "category": "AI Doc Generator",
+        "icon": "$(settings-gear)"
       }
     ],
     "configuration": {
-      "title": "Documentation Generator",
+      "title": "AI Documentation Generator",
       "properties": {
         "docGenerator.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable/disable the documentation generator"
+          "description": "Enable/disable the AI documentation generator"
         },
         "docGenerator.autoUpdate": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically update documentation on file changes"
-        },
-        "docGenerator.includePrivate": {
-          "type": "boolean",
-          "default": false,
-          "description": "Include private methods and classes in documentation"
+          "description": "Automatically update documentation on Git commits and file changes"
         },
         "docGenerator.outputDirectory": {
           "type": "string",
           "default": "./docs",
           "description": "Directory to output generated documentation"
         },
-        "docGenerator.templatePath": {
-          "type": "string",
-          "default": "",
-          "description": "Path to custom documentation templates"
-        },
         "docGenerator.excludePatterns": {
           "type": "array",
           "default": [
             "node_modules/**",
             "dist/**",
-            "*.test.*"
+            "build/**",
+            "*.test.*",
+            "*.spec.*",
+            "**/*.d.ts"
           ],
-          "description": "File patterns to exclude from documentation generation"
-        },
-        "docGenerator.supportedLanguages": {
-          "type": "array",
-          "default": [
-            "typescript",
-            "javascript",
-            "python"
-          ],
-          "description": "Programming languages to analyze for documentation"
-        },
-        "docGenerator.gitIntegration": {
-          "type": "object",
-          "default": {
-            "preCommitHook": true,
-            "autoStage": true,
-            "commitMessage": "docs: update documentation"
-          },
-          "description": "Git integration settings"
-        },
-        "docGenerator.ai.enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable AI-powered documentation generation"
-        },
-        "docGenerator.ai.openRouterApiKey": {
-          "type": "string",
-          "default": "",
-          "description": "OpenRouter API key for AI services (can also be set via OPENROUTER_API_KEY environment variable)"
+          "description": "File patterns to exclude from documentation analysis"
         },
         "docGenerator.ai.defaultModel": {
           "type": "string",
@@ -168,61 +92,48 @@
             "microsoft/phi-3-mini-128k-instruct:free",
             "huggingface/zephyr-7b-beta:free"
           ],
-          "description": "Default AI model to use for documentation generation"
-        },
-        "docGenerator.ai.enhanceExisting": {
-          "type": "boolean",
-          "default": true,
-          "description": "Use AI to enhance existing documentation instead of replacing it"
-        },
-        "docGenerator.ai.includeExamples": {
-          "type": "boolean",
-          "default": true,
-          "description": "Include code examples in AI-generated documentation"
+          "description": "Default AI model for documentation generation (all models are free)"
         },
         "docGenerator.ai.maxTokens": {
           "type": "number",
           "default": 4000,
-          "minimum": 100,
+          "minimum": 1000,
           "maximum": 8000,
-          "description": "Maximum number of tokens for AI responses"
+          "description": "Maximum tokens per AI request"
         },
         "docGenerator.ai.temperature": {
           "type": "number",
           "default": 0.7,
           "minimum": 0,
-          "maximum": 2,
-          "description": "AI creativity level (0 = deterministic, 2 = very creative)"
+          "maximum": 1.5,
+          "description": "AI creativity level (0 = deterministic, 1.5 = creative)"
         }
       }
     },
     "views": {
       "explorer": [
         {
-          "id": "docGeneratorView",
-          "name": "Documentation",
+          "id": "aiDocGeneratorView",
+          "name": "AI Documentation",
           "when": "docGenerator.enabled"
         }
       ]
     },
     "menus": {
-      "docGenerator.aiSubmenu": [
+      "commandPalette": [
         {
-          "command": "docGenerator.generateSmartComments",
-          "when": "editorHasSelection"
+          "command": "docGenerator.generateProjectDocs",
+          "when": "workspaceFolderCount != 0"
         },
         {
-          "command": "docGenerator.generateSmartDescription",
-          "when": "editorHasSelection"
+          "command": "docGenerator.updateDocs",
+          "when": "workspaceFolderCount != 0"
+        },
+        {
+          "command": "docGenerator.configureAI"
         }
       ]
-    },
-    "submenus": [
-      {
-        "id": "docGenerator.aiSubmenu",
-        "label": "🤖 AI Documentation"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

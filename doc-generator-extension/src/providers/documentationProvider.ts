@@ -3,9 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { EventEmitter } from 'events';
 import { CodeAnalyzer, AnalysisResult } from '../analyzers/codeAnalyzer';
-import { MarkdownGenerator } from '../generators/markdownGenerator';
 import { ReadmeGenerator } from '../generators/readmeGenerator';
-import { ChangelogGenerator } from '../generators/changelogGenerator';
 import { GitUtils } from '../utils/gitUtils';
 import { FileUtils } from '../utils/fileUtils';
 

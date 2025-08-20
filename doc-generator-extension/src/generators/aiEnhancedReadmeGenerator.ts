@@ -51,7 +51,7 @@ export class AIEnhancedReadmeGenerator extends ReadmeGenerator {
         }
     }
     
-    private async enhanceWithAI(analysisResult: AnalysisResult, basicReadme: string): Promise<string> {
+    public async enhanceWithAI(analysisResult: AnalysisResult, basicReadme: string): Promise<string> {
         const context = this.buildEnhancementContext(analysisResult);
         
         const request: DocumentationRequest = {

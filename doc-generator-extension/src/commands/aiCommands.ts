@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { aiService, DocumentationRequest } from '../services/aiService';
+import { aiService } from '../services/aiService';
 import { CodeAnalyzer } from '../analyzers/codeAnalyzer';
 import { AIEnhancedReadmeGenerator } from '../generators/aiEnhancedReadmeGenerator';
 import { environmentManager } from '../utils/environmentManager';
@@ -9,6 +9,8 @@ export class AICommands {
     private codeAnalyzer: CodeAnalyzer;
     private readmeGenerator: AIEnhancedReadmeGenerator;
     private context: vscode.ExtensionContext;
+    private statusChangeEmitter = new vscode.EventEmitter<string>();
+    public readonly onStatusChange = this.statusChangeEmitter.event;
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
@@ -17,9 +19,10 @@ export class AICommands {
     }
 
     /**
-     * Generate documentation with AI assistance
+     * Generate comprehensive project documentation with AI
+     * Combines full project analysis, README generation, and API documentation
      */
-    public async generateWithAI(): Promise<void> {
+    public async generateProjectDocumentation(): Promise<void> {
         // Ensure setup is complete before proceeding
         if (!(await FirstTimeSetup.ensureSetup(this.context))) {
             return;
@@ -30,12 +33,14 @@ export class AICommands {
         }
 
         try {
+            this.statusChangeEmitter.fire('Generating...');
+            
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: "Generating AI-enhanced documentation...",
+                title: "🤖 Generating comprehensive project documentation...",
                 cancellable: false
             }, async (progress) => {
-                progress.report({ increment: 0, message: "Analyzing project structure..." });
+                progress.report({ increment: 0, message: "Initializing AI documentation generator..." });
 
                 const workspaceFolders = vscode.workspace.workspaceFolders;
                 if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -44,20 +49,122 @@ export class AICommands {
 
                 const rootPath = workspaceFolders[0].uri.fsPath;
                 
-                progress.report({ increment: 20, message: "Analyzing code..." });
-                const analysisResult = await this.codeAnalyzer.analyzeProject(rootPath, [], []);
+                progress.report({ increment: 15, message: "Analyzing entire project structure..." });
+                const config = vscode.workspace.getConfiguration('docGenerator');
+                const excludePatterns = config.get<string[]>('excludePatterns') || [];
 
-                progress.report({ increment: 50, message: "Generating documentation with AI..." });
+                const analysisResult = await this.codeAnalyzer.analyzeProject(rootPath, [], excludePatterns);
+
+                progress.report({ increment: 40, message: "Generating README with AI..." });
                 const readme = await this.readmeGenerator.generate(analysisResult);
 
-                progress.report({ increment: 80, message: "Saving documentation..." });
-                await this.saveDocumentation(readme, 'README.md');
+                progress.report({ increment: 65, message: "Creating comprehensive project overview..." });
+                const overview = await this.readmeGenerator.generateComprehensiveOverview(analysisResult);
 
-                progress.report({ increment: 100, message: "Done!" });
+                progress.report({ increment: 85, message: "Saving documentation files..." });
+                await Promise.all([
+                    this.saveDocumentation(readme, 'README.md'),
+                    this.saveDocumentation(overview, 'PROJECT_OVERVIEW.md')
+                ]);
+
+                progress.report({ increment: 100, message: "Complete!" });
             });
 
+            this.statusChangeEmitter.fire('Ready');
+            
+            const choice = await vscode.window.showInformationMessage(
+                '🎉 AI-powered project documentation generated successfully!\n\n📄 Created: README.md + PROJECT_OVERVIEW.md',
+                'View README',
+                'View Overview',
+                'Open Docs Folder'
+            );
+
+            switch (choice) {
+                case 'View README':
+                    await this.openDocument('README.md');
+                    break;
+                case 'View Overview':
+                    await this.openDocument('PROJECT_OVERVIEW.md');
+                    break;
+                case 'Open Docs Folder':
+                    await this.openDocsFolder();
+                    break;
+            }
+
+        } catch (error) {
+            this.statusChangeEmitter.fire('Error');
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            vscode.window.showErrorMessage(`Failed to generate AI documentation: ${errorMessage}`);
+        }
+    }
+
+    /**
+     * Update existing documentation with AI based on recent changes
+     */
+    public async updateDocumentation(): Promise<void> {
+        // Ensure setup is complete before proceeding
+        if (!(await FirstTimeSetup.ensureSetup(this.context))) {
+            return;
+        }
+
+        if (!(await this.checkAIConfiguration())) {
+            return;
+        }
+
+        try {
+            this.statusChangeEmitter.fire('Updating...');
+            
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: "🔄 Updating documentation with AI...",
+                cancellable: false
+            }, async (progress) => {
+                progress.report({ increment: 0, message: "Analyzing recent changes..." });
+
+                const workspaceFolders = vscode.workspace.workspaceFolders;
+                if (!workspaceFolders || workspaceFolders.length === 0) {
+                    throw new Error('No workspace folder found');
+                }
+
+                const rootPath = workspaceFolders[0].uri.fsPath;
+                
+                // Check if documentation exists
+                const hasReadme = await this.documentExists('README.md');
+                if (!hasReadme) {
+                    const generateFirst = await vscode.window.showInformationMessage(
+                        'No documentation found. Generate it first?',
+                        'Generate Documentation',
+                        'Cancel'
+                    );
+                    
+                    if (generateFirst === 'Generate Documentation') {
+                        return this.generateProjectDocumentation();
+                    }
+                    return;
+                }
+
+                progress.report({ increment: 25, message: "Re-analyzing project structure..." });
+                const config = vscode.workspace.getConfiguration('docGenerator');
+                const excludePatterns = config.get<string[]>('excludePatterns') || [];
+                
+                const analysisResult = await this.codeAnalyzer.analyzeProject(rootPath, [], excludePatterns);
+
+                progress.report({ increment: 60, message: "Enhancing existing documentation with AI..." });
+                
+                // Update README with current state
+                const existingReadme = await this.getExistingContent('README.md');
+                const updatedReadme = await this.readmeGenerator.enhanceWithAI(analysisResult, existingReadme);
+
+                progress.report({ increment: 85, message: "Saving updated documentation..." });
+                await this.saveDocumentation(updatedReadme, 'README.md');
+
+                progress.report({ increment: 100, message: "Update complete!" });
+            });
+
+            this.statusChangeEmitter.fire('Ready');
+
             vscode.window.showInformationMessage(
-                'AI-enhanced documentation generated successfully! 🤖✨',
+                '✅ Documentation updated successfully with latest changes!',
                 'View README'
             ).then((selection) => {
                 if (selection === 'View README') {
@@ -66,8 +173,35 @@ export class AICommands {
             });
 
         } catch (error) {
+            this.statusChangeEmitter.fire('Error');
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            vscode.window.showErrorMessage(`Failed to generate AI documentation: ${errorMessage}`);
+            vscode.window.showErrorMessage(`Failed to update documentation: ${errorMessage}`);
+        }
+    }
+
+    /**
+     * Handle file changes for auto-update functionality
+     */
+    public async handleFileChange(filePath: string): Promise<void> {
+        const config = vscode.workspace.getConfiguration('docGenerator');
+        if (!config.get('autoUpdate') || !config.get('enabled')) {
+            return;
+        }
+
+        // Debounced update - only update if AI is configured
+        if (await this.isAIConfigured()) {
+            console.log(`File changed: ${filePath} - scheduling documentation update`);
+            this.statusChangeEmitter.fire('Auto-updating...');
+            
+            // Simple auto-update without progress dialog
+            setTimeout(async () => {
+                try {
+                    await this.updateDocumentation();
+                } catch (error) {
+                    console.error('Auto-update failed:', error);
+                    this.statusChangeEmitter.fire('Ready');
+                }
+            }, 1000);
         }
     }
 
@@ -111,196 +245,9 @@ export class AICommands {
         });
     }
 
-    /**
-     * Test AI connection and show results
-     */
-    public async testAI(): Promise<void> {
-        // Ensure setup is complete before proceeding
-        if (!(await FirstTimeSetup.ensureSetup(this.context))) {
-            return;
-        }
 
-        if (!(await this.checkAIConfiguration())) {
-            return;
-        }
-
-        try {
-            await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "Testing AI connection...",
-                cancellable: false
-            }, async (progress) => {
-                progress.report({ increment: 0, message: "Connecting to AI service..." });
-
-                const config = vscode.workspace.getConfiguration('docGenerator.ai');
-                const selectedModel = config.get<string>('defaultModel') || 'qwen/qwen-2-7b-instruct:free';
-
-                progress.report({ increment: 50, message: `Testing model: ${selectedModel}` });
-                
-                const isConnected = await aiService.testConnection(selectedModel);
-                
-                progress.report({ increment: 100, message: "Test complete!" });
-
-                if (isConnected) {
-                    const modelInfo = await aiService.getModelInfo(selectedModel);
-                    vscode.window.showInformationMessage(
-                        `✅ AI connection successful!\n\nModel: ${modelInfo?.name || selectedModel}\nDescription: ${modelInfo?.description || 'No description'}`,
-                        'Show Models'
-                    ).then((selection) => {
-                        if (selection === 'Show Models') {
-                            this.showAvailableModels();
-                        }
-                    });
-                } else {
-                    vscode.window.showErrorMessage(
-                        '❌ AI connection failed. Please check your API key and try again.',
-                        'Configure AI'
-                    ).then((selection) => {
-                        if (selection === 'Configure AI') {
-                            this.configureAI();
-                        }
-                    });
-                }
-            });
-
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            vscode.window.showErrorMessage(`AI test failed: ${errorMessage}`);
-        }
-    }
-
-    /**
-     * Generate smart comments for selected code
-     */
-    public async generateSmartComments(): Promise<void> {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showWarningMessage('No active editor found');
-            return;
-        }
-
-        // Ensure setup is complete before proceeding
-        if (!(await FirstTimeSetup.ensureSetup(this.context))) {
-            return;
-        }
-
-        if (!(await this.checkAIConfiguration())) {
-            return;
-        }
-
-        const selection = editor.selection;
-        const selectedText = editor.document.getText(selection);
-
-        if (!selectedText.trim()) {
-            vscode.window.showWarningMessage('Please select code to generate comments for');
-            return;
-        }
-
-        try {
-            await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "Generating smart comments...",
-                cancellable: false
-            }, async () => {
-                const request: DocumentationRequest = {
-                    type: 'comment',
-                    context: `Generate appropriate comments for this code. Consider the programming language, complexity, and purpose.`,
-                    codeSnippet: selectedText,
-                    language: editor.document.languageId
-                };
-
-                const fastModel = await aiService.selectBestModel('speed');
-                const response = await aiService.generateDocumentation(request, fastModel);
-
-                // Insert the generated comments
-                await editor.edit((editBuilder) => {
-                    const startLine = selection.start.line;
-                    const lineText = editor.document.lineAt(startLine).text;
-                    const indentation = lineText.match(/^\s*/)?.[0] || '';
-                    
-                    // Format the comment with proper indentation
-                    const formattedComment = this.formatComment(response.content, indentation, editor.document.languageId);
-                    
-                    editBuilder.insert(selection.start, formattedComment + '\n');
-                });
-
-                vscode.window.showInformationMessage('Smart comments generated! 🧠✨');
-            });
-
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            vscode.window.showErrorMessage(`Failed to generate comments: ${errorMessage}`);
-        }
-    }
-
-    /**
-     * Generate smart description for a function or class
-     */
-    public async generateSmartDescription(): Promise<void> {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showWarningMessage('No active editor found');
-            return;
-        }
-
-        // Ensure setup is complete before proceeding
-        if (!(await FirstTimeSetup.ensureSetup(this.context))) {
-            return;
-        }
-
-        if (!(await this.checkAIConfiguration())) {
-            return;
-        }
-
-        const selection = editor.selection;
-        const selectedText = editor.document.getText(selection);
-
-        if (!selectedText.trim()) {
-            vscode.window.showWarningMessage('Please select a function or class to describe');
-            return;
-        }
-
-        try {
-            const request: DocumentationRequest = {
-                type: 'description',
-                context: `Analyze this code and provide a clear, concise description of what it does, its purpose, and how it works.`,
-                codeSnippet: selectedText,
-                language: editor.document.languageId
-            };
-
-            const technicalModel = await aiService.selectBestModel('technical');
-            const response = await aiService.generateDocumentation(request, technicalModel);
-
-            // Show the description in a new document
-            const doc = await vscode.workspace.openTextDocument({
-                content: `# Code Description\n\n## Code:\n\`\`\`${editor.document.languageId}\n${selectedText}\n\`\`\`\n\n## AI Analysis:\n\n${response.content}`,
-                language: 'markdown'
-            });
-
-            await vscode.window.showTextDocument(doc);
-
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            vscode.window.showErrorMessage(`Failed to generate description: ${errorMessage}`);
-        }
-    }
 
     private async checkAIConfiguration(): Promise<boolean> {
-        const config = vscode.workspace.getConfiguration('docGenerator.ai');
-        const aiEnabled = config.get<boolean>('enabled', false);
-
-        if (!aiEnabled) {
-            vscode.window.showWarningMessage(
-                'AI features are disabled. Enable them in settings to use AI-powered documentation.',
-                'Enable AI'
-            ).then((selection) => {
-                if (selection === 'Enable AI') {
-                    this.configureAI();
-                }
-            });
-            return false;
-        }
-
         const isConfigured = await aiService.isConfigured();
         if (!isConfigured) {
             vscode.window.showWarningMessage(
@@ -315,8 +262,65 @@ export class AICommands {
             });
             return false;
         }
-
         return true;
+    }
+
+    private async isAIConfigured(): Promise<boolean> {
+        return await aiService.isConfigured();
+    }
+
+    private async documentExists(filename: string): Promise<boolean> {
+        try {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                return false;
+            }
+            
+            const filePath = vscode.Uri.joinPath(workspaceFolders[0].uri, filename);
+            await vscode.workspace.fs.stat(filePath);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    private async getExistingContent(filename: string): Promise<string> {
+        try {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                return '';
+            }
+            
+            const filePath = vscode.Uri.joinPath(workspaceFolders[0].uri, filename);
+            const content = await vscode.workspace.fs.readFile(filePath);
+            return new TextDecoder().decode(content);
+        } catch {
+            return '';
+        }
+    }
+
+    private async openDocsFolder(): Promise<void> {
+        try {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                return;
+            }
+            
+            const config = vscode.workspace.getConfiguration('docGenerator');
+            const outputDir = config.get<string>('outputDirectory') || './docs';
+            const docsPath = vscode.Uri.joinPath(workspaceFolders[0].uri, outputDir);
+            
+            // Try to open the docs folder, create it if it doesn't exist
+            try {
+                await vscode.workspace.fs.stat(docsPath);
+                vscode.commands.executeCommand('revealFileInOS', docsPath);
+            } catch {
+                // Docs folder doesn't exist, just open workspace root
+                vscode.commands.executeCommand('revealFileInOS', workspaceFolders[0].uri);
+            }
+        } catch (error) {
+            console.error('Failed to open docs folder:', error);
+        }
     }
 
 
@@ -349,86 +353,7 @@ export class AICommands {
         }
     }
 
-    private async showAvailableModels(): Promise<void> {
-        const models = aiService.getAvailableModels();
-        
-        const quickPickItems = models.map(model => ({
-            label: model.name,
-            description: model.id,
-            detail: `${model.description} | Context: ${model.contextLength.toLocaleString()} tokens | Strengths: ${model.strengths.join(', ')}`
-        }));
 
-        const selected = await vscode.window.showQuickPick(quickPickItems, {
-            placeHolder: 'Available AI Models (all free)',
-            ignoreFocusOut: true
-        });
-
-        if (selected) {
-            const setAsDefault = await vscode.window.showInformationMessage(
-                `Selected: ${selected.label}\n\n${selected.detail}`,
-                'Set as Default',
-                'OK'
-            );
-
-            if (setAsDefault === 'Set as Default') {
-                const config = vscode.workspace.getConfiguration('docGenerator.ai');
-                await config.update('defaultModel', selected.description, vscode.ConfigurationTarget.Workspace);
-                vscode.window.showInformationMessage(`✅ ${selected.label} is now your default AI model`);
-            }
-        }
-    }
-
-    private formatComment(comment: string, indentation: string, languageId: string): string {
-        const lines = comment.split('\n');
-        
-        switch (languageId) {
-            case 'typescript':
-            case 'javascript':
-                if (lines.length === 1) {
-                    return `${indentation}// ${lines[0]}`;
-                } else {
-                    let formatted = `${indentation}/**\n`;
-                    for (const line of lines) {
-                        formatted += `${indentation} * ${line}\n`;
-                    }
-                    formatted += `${indentation} */`;
-                    return formatted;
-                }
-            
-            case 'python':
-                if (lines.length === 1) {
-                    return `${indentation}# ${lines[0]}`;
-                } else {
-                    let formatted = `${indentation}"""\n`;
-                    for (const line of lines) {
-                        formatted += `${indentation}${line}\n`;
-                    }
-                    formatted += `${indentation}"""`;
-                    return formatted;
-                }
-            
-            case 'java':
-            case 'csharp':
-                if (lines.length === 1) {
-                    return `${indentation}// ${lines[0]}`;
-                } else {
-                    let formatted = `${indentation}/**\n`;
-                    for (const line of lines) {
-                        formatted += `${indentation} * ${line}\n`;
-                    }
-                    formatted += `${indentation} */`;
-                    return formatted;
-                }
-            
-            default:
-                // Generic comment format
-                if (lines.length === 1) {
-                    return `${indentation}// ${lines[0]}`;
-                } else {
-                    return lines.map(line => `${indentation}// ${line}`).join('\n');
-                }
-        }
-    }
 
     private getConfigurationWebviewContent(): string {
         return `<!DOCTYPE html>
