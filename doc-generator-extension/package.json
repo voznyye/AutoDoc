@@ -2,7 +2,7 @@
   "name": "auto-documentation-generator",
   "displayName": "AI Documentation Generator",
   "description": "AI-powered VS Code/Cursor extension that automatically generates and maintains comprehensive project documentation using free AI models and intelligent code analysis",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "publisher": "voznyye",
   "engines": {
     "vscode": "^1.80.0"
@@ -84,29 +84,25 @@
         },
         "docGenerator.ai.defaultModel": {
           "type": "string",
-          "default": "qwen/qwen-2-7b-instruct:free",
+          "default": "tngtech/deepseek-r1t2-chimera:free",
           "enum": [
-            "meta-llama/llama-3.2-3b-instruct:free",
-            "meta-llama/llama-3.2-1b-instruct:free",
-            "qwen/qwen-2-7b-instruct:free",
-            "microsoft/phi-3-mini-128k-instruct:free",
-            "huggingface/zephyr-7b-beta:free"
+            "tngtech/deepseek-r1t2-chimera:free"
           ],
-          "description": "Default AI model for documentation generation (all models are free)"
+          "description": "DeepSeek R1T2 Chimera - Superior AI model for professional documentation generation"
         },
         "docGenerator.ai.maxTokens": {
           "type": "number",
-          "default": 4000,
-          "minimum": 1000,
-          "maximum": 8000,
-          "description": "Maximum tokens per AI request"
+          "default": 8192,
+          "minimum": 2000,
+          "maximum": 8192,
+          "description": "Maximum tokens per DeepSeek R1T2 Chimera request (optimized for comprehensive documentation)"
         },
         "docGenerator.ai.temperature": {
           "type": "number",
-          "default": 0.7,
+          "default": 0.1,
           "minimum": 0,
-          "maximum": 1.5,
-          "description": "AI creativity level (0 = deterministic, 1.5 = creative)"
+          "maximum": 1.0,
+          "description": "AI consistency level (0.1 = highly consistent documentation, 1.0 = more creative)"
         }
       }
     },

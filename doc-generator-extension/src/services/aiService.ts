@@ -34,52 +34,32 @@ export interface DocumentationRequest {
     };
 }
 
-// Best free models from OpenRouter for documentation tasks
-export const FREE_AI_MODELS: AIModel[] = [
-    {
-        id: 'meta-llama/llama-3.2-3b-instruct:free',
-        name: 'Llama 3.2 3B Instruct',
-        description: 'Fast and efficient for code documentation',
-        isFree: true,
-        contextLength: 131072,
-        strengths: ['Code understanding', 'Fast responses', 'Good for comments']
-    },
-    {
-        id: 'meta-llama/llama-3.2-1b-instruct:free', 
-        name: 'Llama 3.2 1B Instruct',
-        description: 'Lightweight model for quick documentation tasks',
-        isFree: true,
-        contextLength: 131072,
-        strengths: ['Very fast', 'Low resource usage', 'Basic documentation']
-    },
-    {
-        id: 'qwen/qwen-2-7b-instruct:free',
-        name: 'Qwen 2 7B Instruct',
-        description: 'Excellent for technical documentation and explanations',
-        isFree: true,
-        contextLength: 131072,
-        strengths: ['Technical writing', 'Detailed explanations', 'Multi-language support']
-    },
-    {
-        id: 'microsoft/phi-3-mini-128k-instruct:free',
-        name: 'Phi-3 Mini 128K',
-        description: 'Microsoft\'s efficient model for code and documentation',
-        isFree: true,
-        contextLength: 128000,
-        strengths: ['Code analysis', 'Structured output', 'Technical accuracy']
-    },
-    {
-        id: 'huggingface/zephyr-7b-beta:free',
-        name: 'Zephyr 7B Beta',
-        description: 'Great for conversational documentation and explanations',
-        isFree: true,
-        contextLength: 32768,
-        strengths: ['Natural language', 'User-friendly docs', 'Clear explanations']
-    }
+// Superior AI model for professional documentation generation
+export const DEEPSEEK_R1T2_CHIMERA: AIModel = {
+    id: 'tngtech/deepseek-r1t2-chimera:free',
+    name: 'TNG: DeepSeek R1T2 Chimera (free)',
+    description: 'Second-generation 671B-parameter mixture-of-experts model with strong reasoning performance, 60k context length, and consistent <think> token behavior for comprehensive documentation',
+    isFree: true,
+    contextLength: 163840, // ~163k context as per OpenRouter specs
+    strengths: [
+        'Superior reasoning capabilities',
+        'Long-context analysis (60k+ tokens)',
+        'Professional documentation generation', 
+        'Technical depth and accuracy',
+        'Structured markdown output',
+        'Architecture understanding',
+        'Cost-effective intelligence',
+        'Consistent analysis behavior'
+    ]
+};
+
+// Available AI models for documentation tasks - DeepSeek R1T2 Chimera is the primary model
+export const AVAILABLE_AI_MODELS: AIModel[] = [
+    DEEPSEEK_R1T2_CHIMERA
 ];
 
 export class AIService {
-    private baseUrl = 'https://openrouter.ai/api/v1';
+    private baseUrl = 'https://openrouter.ai/api/v1';  // OpenRouter endpoint for DeepSeek R1T2 Chimera
     private defaultModel: string;
     private isInitialized = false;
 
@@ -96,7 +76,7 @@ export class AIService {
 
     private getDefaultModel(): string {
         const config = vscode.workspace.getConfiguration('docGenerator.ai');
-        return config.get<string>('defaultModel') || 'qwen/qwen-2-7b-instruct:free';
+        return config.get<string>('defaultModel') || 'tngtech/deepseek-r1t2-chimera:free';
     }
 
     public async isConfigured(): Promise<boolean> {
@@ -105,13 +85,13 @@ export class AIService {
     }
 
     public getAvailableModels(): AIModel[] {
-        return FREE_AI_MODELS;
+        return AVAILABLE_AI_MODELS;
     }
 
     public async generateDocumentation(request: DocumentationRequest, modelId?: string): Promise<AIResponse> {
         await this.ensureInitialized();
         if (!(await this.isConfigured())) {
-            throw new Error('AI service is not configured. Please set your OpenRouter API key in .env file or environment variables.');
+            throw new Error('AI service is not configured. Please set your OpenRouter API key in environment variables for DeepSeek R1T2 Chimera access.');
         }
 
         const model = modelId || this.defaultModel;
@@ -143,71 +123,79 @@ export class AIService {
     }
 
     private buildReadmePrompt(request: DocumentationRequest): string {
-        return `You are an expert technical writer who creates documentation that developers love to read. 
+        return `You are an expert technical documentation specialist. Analyze this codebase comprehensively and create detailed, professional documentation.
 
-**Your Task:** Generate a comprehensive, human-readable README.md that explains what this project actually DOES in plain English.
+REQUIREMENTS:
+- Generate complete, production-ready documentation
+- Include detailed API references with examples
+- Document architecture, patterns, and design decisions
+- Provide comprehensive setup and usage instructions
+- Create clear, structured markdown with proper hierarchy
+- Include code examples for all major features
+- Document error handling and edge cases
 
-**Project Analysis:**
+ANALYSIS DEPTH:
+- Full codebase understanding, not surface-level
+- Identify core functionality and user workflows  
+- Document internal architecture and data flow
+- Explain configuration options and customization
+- Include troubleshooting and FAQ sections
+
+**PROJECT ANALYSIS:**
 ${request.context}
 
 ${request.projectInfo ? `
-**Project Details:**
+**PROJECT METADATA:**
 - Name: ${request.projectInfo.name}
 - Current Description: ${request.projectInfo.description || 'None provided'}
-- Key Dependencies: ${request.projectInfo.dependencies?.slice(0, 10).join(', ') || 'None'}
+- Dependencies: ${request.projectInfo.dependencies?.join(', ') || 'None'}
 - Available Scripts: ${Object.keys(request.projectInfo.scripts || {}).join(', ') || 'None'}
 ` : ''}
 
 ${request.existingContent ? `
-**Existing README to enhance:**
+**EXISTING CONTENT TO ENHANCE:**
 ${request.existingContent}
 ` : ''}
 
-**Critical Requirements:**
-1. **Write in conversational, human English** - no robotic language
-2. **Focus on WHAT the project does** and WHY someone would use it
-3. **Explain the value proposition** in the first paragraph
-4. **Use real-world examples** and practical use cases
-5. **Make it engaging** - people should want to try this project
-
-**Structure your README with:**
+**DOCUMENTATION STRUCTURE REQUIRED:**
 
 # Project Name
-*One sentence that immediately explains what this does and why it matters*
+*Clear, compelling project description with immediate value proposition*
 
-## What This Project Does
-*2-3 paragraphs explaining the core functionality in simple terms*
+## Overview
+*Comprehensive explanation of what this project does, its purpose, and target use cases*
 
-## Why You'd Want This
-*Bullet points of key benefits and use cases*
+## Architecture
+*System design, component relationships, and data flow diagrams*
 
-## Quick Start
-*Minimum steps to get running*
+## Features
+*Detailed feature breakdown with technical specifications*
 
-## How It Works
-*Brief technical overview without jargon*
+## Installation & Setup
+*Complete setup instructions with system requirements*
 
-## Installation
-*Step-by-step instructions*
-
-## Usage Examples
-*Real examples that show value*
+## API Reference
+*Full API documentation with parameters, return values, and examples*
 
 ## Configuration
-*Key settings explained simply*
+*All configuration options with detailed explanations*
+
+## Usage Examples
+*Comprehensive examples covering common and advanced use cases*
+
+## Development
+*Development environment setup, build process, testing*
+
+## Troubleshooting
+*Common issues and their solutions*
 
 ## Contributing
-*How others can help*
+*Contribution guidelines and development workflow*
 
-**Writing Style:**
-- Use "you" and "your" 
-- Write like explaining to a smart colleague
-- Avoid corporate speak
-- Make every sentence add value
-- Use examples and analogies
-- Be enthusiastic but not overselling
+## License & Credits
+*License information and acknowledgments*
 
-**Remember:** A great README makes someone go "Oh cool, I need this!" within 30 seconds.`;
+OUTPUT FORMAT: Professional markdown documentation suitable for GitHub/enterprise use with proper formatting, code blocks, tables, and technical depth.`;
     }
 
     private buildApiPrompt(request: DocumentationRequest): string {
@@ -273,49 +261,46 @@ Use the appropriate comment format for the programming language.`;
     }
 
     private buildDescriptionPrompt(request: DocumentationRequest): string {
-        return `You are an expert technical communicator who explains complex code in simple, human terms.
+        return `You are analyzing code changes to update existing documentation. Be precise and comprehensive.
 
-**Your Task:** Create a clear, engaging description that makes this code understandable to any developer.
+CHANGE ANALYSIS:
+- Identify what functionality was added, modified, or removed
+- Determine impact on existing documentation sections
+- Update affected documentation while maintaining consistency
+- Add new sections for new features
+- Mark deprecated functionality clearly
 
-**Content to analyze:**
+**CONTENT TO ANALYZE:**
 ${request.context}
 
 ${request.codeSnippet ? `
-**Code to describe:**
+**CODE CHANGES:**
 \`\`\`${request.language || 'typescript'}
 ${request.codeSnippet}
 \`\`\`
 ` : ''}
 
-**Create a description that:**
+UPDATE REQUIREMENTS:
+- Maintain documentation quality and structure
+- Update examples and code snippets to reflect changes
+- Ensure all cross-references remain valid
+- Update table of contents and navigation
+- Preserve existing documentation style and format
 
-1. **Starts with what it DOES** - not how it's implemented
-2. **Explains the purpose** - why this exists and when you'd use it
-3. **Highlights key benefits** - what makes this useful or special
-4. **Mentions important details** - anything a developer should know
-5. **Uses natural language** - write like explaining to a colleague
-
-**Writing guidelines:**
-- Lead with the main purpose/benefit
-- Use active voice ("This function calculates..." not "Calculations are performed...")
-- Avoid jargon when possible, explain when necessary
-- Give practical context ("Perfect for validating user input" not "Performs validation")
-- Be concise but complete
-- Make it interesting - show why someone should care
-
-**Example style:**
-Instead of: "This function performs data validation operations on input parameters"
-Write: "Validates user input and catches common mistakes before they cause problems in your app"
-
-**Your response should be 1-3 sentences that immediately make the code's purpose and value clear.**`;
+OUTPUT: Updated documentation sections with change summary and detailed technical analysis.`;
     }
 
     private async makeAPIRequest(model: string, prompt: string): Promise<any> {
         const apiKey = await environmentManager.getSecureValue('openRouterApiKey');
         
         if (!apiKey) {
-            throw new Error('OpenRouter API key not found. Please check your .env file or environment variables.');
+            throw new Error('OpenRouter API key not found. Please set your OPENROUTER_API_KEY environment variable for DeepSeek R1T2 Chimera access.');
         }
+
+        // DeepSeek R1T2 Chimera optimized configuration
+        const config = vscode.workspace.getConfiguration('docGenerator.ai');
+        const maxTokens = config.get<number>('maxTokens') || 8192;
+        const temperature = config.get<number>('temperature') || 0.1; // Low temperature for consistent documentation
 
         const response = await fetch(`${this.baseUrl}/chat/completions`, {
             method: 'POST',
@@ -323,22 +308,22 @@ Write: "Validates user input and catches common mistakes before they cause probl
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
                 'HTTP-Referer': 'https://github.com/voznyye/AutoDoc',
-                'X-Title': 'Auto Documentation Generator'
+                'X-Title': 'AutoDoc-DeepSeek-Extension-v2.0.0'
             },
             body: JSON.stringify({
                 model: model,
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are an expert technical documentation writer. Provide clear, comprehensive, and well-structured documentation.'
+                        content: 'You are a professional technical documentation specialist with expertise in software architecture, API design, and developer experience. Generate comprehensive, production-ready documentation with technical depth and clarity.'
                     },
                     {
                         role: 'user',
                         content: prompt
                     }
                 ],
-                max_tokens: 4000,
-                temperature: 0.7,
+                max_tokens: maxTokens,
+                temperature: temperature,
                 top_p: 0.9,
                 frequency_penalty: 0.1,
                 presence_penalty: 0.1,
@@ -348,7 +333,7 @@ Write: "Validates user input and catches common mistakes before they cause probl
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`API request failed (${response.status}): ${errorText}`);
+            throw new Error(`DeepSeek R1T2 Chimera API request failed (${response.status}): ${errorText}`);
         }
 
         return await response.json();
@@ -385,21 +370,12 @@ Write: "Validates user input and catches common mistakes before they cause probl
     }
 
     public async getModelInfo(modelId: string): Promise<AIModel | undefined> {
-        return FREE_AI_MODELS.find(model => model.id === modelId);
+        return AVAILABLE_AI_MODELS.find(model => model.id === modelId);
     }
 
-    public async selectBestModel(task: 'speed' | 'quality' | 'technical' | 'general'): Promise<string> {
-        switch (task) {
-            case 'speed':
-                return 'meta-llama/llama-3.2-1b-instruct:free';
-            case 'quality':
-                return 'qwen/qwen-2-7b-instruct:free';
-            case 'technical':
-                return 'microsoft/phi-3-mini-128k-instruct:free';
-            case 'general':
-            default:
-                return 'meta-llama/llama-3.2-3b-instruct:free';
-        }
+    public async selectBestModel(_task: 'speed' | 'quality' | 'technical' | 'general'): Promise<string> {
+        // DeepSeek R1T2 Chimera is optimized for all documentation tasks
+        return 'tngtech/deepseek-r1t2-chimera:free';
     }
 }
 
