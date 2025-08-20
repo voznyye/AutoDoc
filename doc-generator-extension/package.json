@@ -1,8 +1,8 @@
 {
   "name": "ai-documentation-generator",
-  "displayName": "AI Documentation Generator",
+  "displayName": "AutoDoc - AI Documentation Generator",
   "description": "AI-powered VS Code/Cursor extension that automatically generates and maintains comprehensive project documentation using DeepSeek R1T2 Chimera AI model",
-  "version": "2.3.0",
+  "version": "2.5.1",
   "publisher": "voznyye",
   "engines": {
     "vscode": "^1.80.0"
@@ -111,9 +111,9 @@
     "test": "npm run compile && node ./out/test/runTest.js",
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
-    "release:patch": "npm version patch && npm run compile && npm run package && git add . && git commit -m \"Release v$(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
-    "release:minor": "npm version minor && npm run compile && npm run package && git add . && git commit -m \"Release v$(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
-    "release:major": "npm version major && npm run compile && npm run package && git add . && git commit -m \"Release v$(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
+    "release:patch": "npm version patch && npm run compile && npm run package",
+    "release:minor": "npm version minor && npm run compile && npm run package",
+    "release:major": "npm version major && npm run compile && npm run package",
     "release:custom": "npm run compile && npm run package",
     "publish": "vsce publish",
     "publish:patch": "npm run release:patch && vsce publish",
