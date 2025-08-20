@@ -69,6 +69,11 @@ export function activate(context: vscode.ExtensionContext) {
         () => aiCommands.generateSmartDescription()
     );
 
+    const generateProjectOverviewDisposable = vscode.commands.registerCommand(
+        'docGenerator.generateProjectOverview',
+        () => aiCommands.generateProjectOverview()
+    );
+
     // Hidden command for development/testing
     const resetSetupDisposable = vscode.commands.registerCommand(
         'docGenerator.resetSetup',
@@ -86,6 +91,7 @@ export function activate(context: vscode.ExtensionContext) {
         testAIDisposable,
         generateSmartCommentsDisposable,
         generateSmartDescriptionDisposable,
+        generateProjectOverviewDisposable,
         resetSetupDisposable
     );
 

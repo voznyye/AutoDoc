@@ -394,4 +394,212 @@ export class AIEnhancedReadmeGenerator extends ReadmeGenerator {
         
         return context;
     }
+
+    /**
+     * Generate a comprehensive project overview for detailed documentation
+     */
+    public async generateComprehensiveOverview(analysisResult: AnalysisResult): Promise<string> {
+        const config = vscode.workspace.getConfiguration('docGenerator.ai');
+        const aiEnabled = config.get<boolean>('enabled', false);
+        
+        if (!aiEnabled || !aiService.isConfigured()) {
+            return this.generateFallbackOverview(analysisResult);
+        }
+        
+        try {
+            const context = this.buildComprehensiveProjectContext(analysisResult);
+            
+            const request: DocumentationRequest = {
+                type: 'readme',
+                context: context,
+                projectInfo: {
+                    name: analysisResult.metadata?.projectName || 'Project',
+                    description: analysisResult.metadata?.description || undefined,
+                    dependencies: analysisResult.dependencies || undefined,
+                    scripts: (analysisResult.metadata as any)?.scripts || undefined
+                }
+            };
+            
+            const qualityModel = await aiService.selectBestModel('quality');
+            const response = await aiService.generateDocumentation(request, qualityModel);
+            
+            return response.content;
+        } catch (error) {
+            console.error('AI comprehensive overview generation failed:', error);
+            return this.generateFallbackOverview(analysisResult);
+        }
+    }
+
+    private buildComprehensiveProjectContext(analysisResult: AnalysisResult): string {
+        let context = `**MISSION: Create a comprehensive, human-readable project overview that explains what this project ACTUALLY DOES and why someone would use it.**
+
+**PROJECT ANALYSIS:**
+
+`;
+        
+        // Project metadata
+        if (analysisResult.metadata) {
+            context += `**Project Information:**
+- Name: ${analysisResult.metadata.projectName || 'Unknown Project'}
+- Current Description: ${analysisResult.metadata.description || 'None provided'}
+- Version: ${analysisResult.metadata.version || 'Unknown'}
+- Main Dependencies: ${analysisResult.dependencies.slice(0, 8).join(', ') || 'None'}
+- Available Scripts: ${Object.keys((analysisResult.metadata as any)?.scripts || {}).join(', ') || 'None'}
+
+`;
+        }
+        
+        // Code structure with emphasis on functionality
+        const classes = analysisResult.elements.filter(e => e.type === 'class');
+        const functions = analysisResult.elements.filter(e => e.type === 'function');
+        const interfaces = analysisResult.elements.filter(e => e.type === 'interface');
+        const publicElements = analysisResult.elements.filter(e => e.visibility === 'public');
+        
+        context += `**Codebase Structure:**
+- Total Code Elements: ${analysisResult.elements.length}
+- Classes: ${classes.length}
+- Functions: ${functions.length}
+- Interfaces: ${interfaces.length}
+- Public API Elements: ${publicElements.length}
+- Lines of Code: ${analysisResult.metrics.linesOfCode.toLocaleString()}
+- Average Complexity: ${analysisResult.metrics.complexity}
+
+`;
+        
+        // Core functionality analysis
+        if (classes.length > 0) {
+            context += `**Core Classes (what they do):**
+`;
+            classes.slice(0, 6).forEach(cls => {
+                context += `- **${cls.name}**`;
+                if (cls.description) {
+                    context += `: ${cls.description}`;
+                } else {
+                    context += `: [Main class component]`;
+                }
+                if (cls.extends) {
+                    context += ` (extends ${cls.extends})`;
+                }
+                context += '\n';
+            });
+            context += '\n';
+        }
+        
+        if (functions.length > 0) {
+            context += `**Key Functions (what they do):**
+`;
+            functions.slice(0, 8).forEach(func => {
+                context += `- **${func.name}**`;
+                if (func.description) {
+                    context += `: ${func.description}`;
+                } else if (func.parameters && func.parameters.length > 0) {
+                    context += `: Takes ${func.parameters.map(p => p.type).join(', ')}`;
+                    if (func.returnType && func.returnType !== 'void') {
+                        context += ` → Returns ${func.returnType}`;
+                    }
+                } else {
+                    context += `: [Core function]`;
+                }
+                context += '\n';
+            });
+            context += '\n';
+        }
+        
+        // File structure insights
+        if (analysisResult.fileStructure && analysisResult.fileStructure.length > 0) {
+            context += `**Project Structure Analysis:**
+`;
+            const topLevelDirs = analysisResult.fileStructure.filter(n => n.type === 'directory').slice(0, 6);
+            const topLevelFiles = analysisResult.fileStructure.filter(n => n.type === 'file').slice(0, 6);
+            
+            if (topLevelDirs.length > 0) {
+                context += 'Main directories: ' + topLevelDirs.map(d => d.name).join(', ') + '\n';
+            }
+            if (topLevelFiles.length > 0) {
+                context += 'Key files: ' + topLevelFiles.map(f => f.name).join(', ') + '\n';
+            }
+            context += '\n';
+        }
+        
+        // Technology stack analysis
+        if (analysisResult.dependencies && analysisResult.dependencies.length > 0) {
+            const frameworks = this.identifyFrameworks(analysisResult.dependencies);
+            const libraries = this.identifyLibraries(analysisResult.dependencies);
+            
+            if (frameworks.length > 0 || libraries.length > 0) {
+                context += `**Technology Stack:**
+`;
+                if (frameworks.length > 0) {
+                    context += `Frameworks: ${frameworks.join(', ')}\n`;
+                }
+                if (libraries.length > 0) {
+                    context += `Key Libraries: ${libraries.slice(0, 8).join(', ')}\n`;
+                }
+                context += '\n';
+            }
+        }
+        
+        context += `**YOUR TASK:** Generate a comprehensive README that:
+
+1. **Immediately explains WHAT this project does** (in the first sentence)
+2. **Shows WHY someone would want to use it** (real benefits)
+3. **Demonstrates HOW to get started** (practical examples)
+4. **Covers all major functionality** based on the code analysis above
+5. **Uses engaging, human language** - no corporate speak!
+
+Write like you're excited about this project and want others to try it. Make it practical, clear, and helpful!`;
+        
+        return context;
+    }
+
+    private identifyFrameworks(dependencies: string[]): string[] {
+        const frameworks: string[] = [];
+        const frameworkPatterns = [
+            'react', 'vue', 'angular', 'svelte', 'express', 'fastify', 'koa',
+            'nestjs', 'nextjs', 'nuxt', 'gatsby', 'electron', 'react-native',
+            'django', 'flask', 'fastapi', 'spring', 'rails', 'laravel'
+        ];
+        
+        dependencies.forEach(dep => {
+            frameworkPatterns.forEach(pattern => {
+                if (dep.toLowerCase().includes(pattern)) {
+                    frameworks.push(dep);
+                }
+            });
+        });
+        
+        return [...new Set(frameworks)];
+    }
+
+    private identifyLibraries(dependencies: string[]): string[] {
+        return dependencies.filter(dep => {
+            // Filter out common dev dependencies
+            const devPatterns = ['@types/', 'eslint', 'prettier', 'webpack', 'babel', 'jest', 'mocha', 'chai'];
+            return !devPatterns.some(pattern => dep.includes(pattern));
+        });
+    }
+
+    private generateFallbackOverview(analysisResult: AnalysisResult): string {
+        return `# ${analysisResult.metadata?.projectName || 'Project'}
+
+${analysisResult.metadata?.description || 'A software project with comprehensive functionality.'}
+
+## Overview
+
+This project contains ${analysisResult.elements.length} code elements including ${analysisResult.elements.filter(e => e.type === 'class').length} classes and ${analysisResult.elements.filter(e => e.type === 'function').length} functions.
+
+## Features
+
+- Comprehensive codebase with ${analysisResult.metrics.linesOfCode.toLocaleString()} lines of code
+- Built with ${analysisResult.dependencies.length} dependencies
+- Well-structured architecture
+
+## Getting Started
+
+[Installation and usage instructions would go here]
+
+---
+
+*Documentation generated automatically. For more details, explore the source code.*`;
+    }
 }

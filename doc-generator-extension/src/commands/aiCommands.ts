@@ -801,4 +801,75 @@ export class AICommands {
             await environmentManager.reload();
         }
     }
+
+    /**
+     * Generate comprehensive project overview
+     */
+    public async generateProjectOverview(): Promise<void> {
+        // Ensure setup is complete before proceeding
+        if (!(await FirstTimeSetup.ensureSetup(this.context))) {
+            return;
+        }
+
+        if (!(await this.checkAIConfiguration())) {
+            return;
+        }
+
+        try {
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: "Generating comprehensive project overview...",
+                cancellable: false
+            }, async (progress) => {
+                progress.report({ increment: 0, message: "Analyzing entire project..." });
+
+                const workspaceFolders = vscode.workspace.workspaceFolders;
+                if (!workspaceFolders || workspaceFolders.length === 0) {
+                    throw new Error('No workspace folder found');
+                }
+
+                const rootPath = workspaceFolders[0].uri.fsPath;
+                
+                progress.report({ increment: 20, message: "Analyzing codebase structure..." });
+                
+                // Use improved exclude patterns
+                const config = vscode.workspace.getConfiguration('docGenerator');
+                const excludePatterns = config.get<string[]>('excludePatterns') || [];
+                const supportedLanguages = config.get<string[]>('supportedLanguages') || ['typescript', 'javascript'];
+                
+                const analysisResult = await this.codeAnalyzer.analyzeProject(rootPath, supportedLanguages, excludePatterns);
+
+                progress.report({ increment: 60, message: "Generating comprehensive overview with AI..." });
+                
+                const overview = await this.readmeGenerator.generateComprehensiveOverview(analysisResult);
+
+                progress.report({ increment: 90, message: "Finalizing documentation..." });
+
+                // Save overview to PROJECT_OVERVIEW.md
+                await this.saveDocumentation(overview, 'PROJECT_OVERVIEW.md');
+                
+                progress.report({ increment: 100, message: "Complete!" });
+
+                // Show the generated overview
+                const doc = await vscode.workspace.openTextDocument({
+                    content: overview,
+                    language: 'markdown'
+                });
+                
+                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
+                
+                vscode.window.showInformationMessage(
+                    '🎉 Comprehensive project overview generated! \n📁 Saved as PROJECT_OVERVIEW.md',
+                    'View File'
+                ).then((selection) => {
+                    if (selection === 'View File') {
+                        vscode.commands.executeCommand('workbench.explorer.fileView.focus');
+                    }
+                });
+            });
+
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to generate project overview: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
 }

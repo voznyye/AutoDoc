@@ -692,8 +692,78 @@ export class CodeAnalyzer {
     }
 
     private shouldExclude(filePath: string, excludePatterns: string[]): boolean {
-        const relativePath = filePath.replace(process.cwd(), '').replace(/^\//, '');
+        const fileName = path.basename(filePath);
+        const relativePath = path.relative(process.cwd(), filePath);
         
+        // Always exclude hidden files and directories (starting with .)
+        if (fileName.startsWith('.') && !fileName.match(/^\.(env|gitignore|vscode)$/)) {
+            return true;
+        }
+        
+        // Default exclusions for common directories/files
+        const defaultExclusions = [
+            'node_modules',
+            'dist',
+            'build',
+            'out',
+            'target',
+            'bin',
+            'obj',
+            'vendor',
+            '__pycache__',
+            '.git',
+            '.svn',
+            '.hg',
+            'coverage',
+            '.coverage',
+            '.pytest_cache',
+            '.mypy_cache',
+            '.tox',
+            'venv',
+            'env',
+            '.venv',
+            '.env',
+            'bower_components',
+            'jspm_packages',
+            '.npm',
+            '.yarn',
+            'logs',
+            '*.log',
+            'temp',
+            'tmp',
+            '.tmp',
+            '.DS_Store',
+            'Thumbs.db',
+            '.idea',
+            '.vscode/settings.json',
+            '*.vsix',
+            '*.map',
+            '*.min.js',
+            '*.min.css'
+        ];
+
+        // Check if file/directory matches default exclusions
+        const isDefaultExcluded = defaultExclusions.some(exclusion => {
+            if (exclusion.includes('*')) {
+                // Handle wildcards
+                const regexPattern = exclusion
+                    .replace(/\./g, '\\.')
+                    .replace(/\*/g, '.*');
+                const regex = new RegExp(regexPattern);
+                return regex.test(fileName) || regex.test(relativePath);
+            } else {
+                // Direct match
+                return fileName === exclusion || 
+                       relativePath.includes(exclusion) ||
+                       relativePath.split(path.sep).includes(exclusion);
+            }
+        });
+
+        if (isDefaultExcluded) {
+            return true;
+        }
+        
+        // Check user-defined exclude patterns
         return excludePatterns.some(pattern => {
             // Convert glob pattern to regex
             const regexPattern = pattern
@@ -702,7 +772,7 @@ export class CodeAnalyzer {
                 .replace(/\?/g, '.');
             
             const regex = new RegExp(regexPattern);
-            return regex.test(relativePath);
+            return regex.test(relativePath) || regex.test(fileName);
         });
     }
 

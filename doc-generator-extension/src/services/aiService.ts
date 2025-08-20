@@ -143,33 +143,71 @@ export class AIService {
     }
 
     private buildReadmePrompt(request: DocumentationRequest): string {
-        return `You are a technical documentation expert. Generate a comprehensive README.md for this project.
+        return `You are an expert technical writer who creates documentation that developers love to read. 
 
-Project Context:
+**Your Task:** Generate a comprehensive, human-readable README.md that explains what this project actually DOES in plain English.
+
+**Project Analysis:**
 ${request.context}
 
 ${request.projectInfo ? `
-Project Information:
+**Project Details:**
 - Name: ${request.projectInfo.name}
-- Description: ${request.projectInfo.description || 'Not provided'}
-- Dependencies: ${request.projectInfo.dependencies?.join(', ') || 'Not provided'}
-- Scripts: ${JSON.stringify(request.projectInfo.scripts || {}, null, 2)}
+- Current Description: ${request.projectInfo.description || 'None provided'}
+- Key Dependencies: ${request.projectInfo.dependencies?.slice(0, 10).join(', ') || 'None'}
+- Available Scripts: ${Object.keys(request.projectInfo.scripts || {}).join(', ') || 'None'}
 ` : ''}
 
 ${request.existingContent ? `
-Existing README content to improve/update:
+**Existing README to enhance:**
 ${request.existingContent}
 ` : ''}
 
-Generate a well-structured README.md with:
-1. Project title and description
-2. Installation instructions
-3. Usage examples
-4. API documentation (if applicable)
-5. Contributing guidelines
-6. License information
+**Critical Requirements:**
+1. **Write in conversational, human English** - no robotic language
+2. **Focus on WHAT the project does** and WHY someone would use it
+3. **Explain the value proposition** in the first paragraph
+4. **Use real-world examples** and practical use cases
+5. **Make it engaging** - people should want to try this project
 
-Use clear, professional language and proper Markdown formatting. Include code examples where appropriate.`;
+**Structure your README with:**
+
+# Project Name
+*One sentence that immediately explains what this does and why it matters*
+
+## What This Project Does
+*2-3 paragraphs explaining the core functionality in simple terms*
+
+## Why You'd Want This
+*Bullet points of key benefits and use cases*
+
+## Quick Start
+*Minimum steps to get running*
+
+## How It Works
+*Brief technical overview without jargon*
+
+## Installation
+*Step-by-step instructions*
+
+## Usage Examples
+*Real examples that show value*
+
+## Configuration
+*Key settings explained simply*
+
+## Contributing
+*How others can help*
+
+**Writing Style:**
+- Use "you" and "your" 
+- Write like explaining to a smart colleague
+- Avoid corporate speak
+- Make every sentence add value
+- Use examples and analogies
+- Be enthusiastic but not overselling
+
+**Remember:** A great README makes someone go "Oh cool, I need this!" within 30 seconds.`;
     }
 
     private buildApiPrompt(request: DocumentationRequest): string {
@@ -235,26 +273,41 @@ Use the appropriate comment format for the programming language.`;
     }
 
     private buildDescriptionPrompt(request: DocumentationRequest): string {
-        return `You are a technical writer. Generate a clear, concise description for this code or project component.
+        return `You are an expert technical communicator who explains complex code in simple, human terms.
 
-Content to describe:
+**Your Task:** Create a clear, engaging description that makes this code understandable to any developer.
+
+**Content to analyze:**
 ${request.context}
 
 ${request.codeSnippet ? `
-Code:
+**Code to describe:**
 \`\`\`${request.language || 'typescript'}
 ${request.codeSnippet}
 \`\`\`
 ` : ''}
 
-Generate a clear, professional description that:
-1. Explains what this code/component does
-2. Highlights key features or functionality
-3. Mentions any important usage notes
-4. Uses appropriate technical terminology
-5. Is concise but comprehensive
+**Create a description that:**
 
-Focus on clarity and usefulness for developers.`;
+1. **Starts with what it DOES** - not how it's implemented
+2. **Explains the purpose** - why this exists and when you'd use it
+3. **Highlights key benefits** - what makes this useful or special
+4. **Mentions important details** - anything a developer should know
+5. **Uses natural language** - write like explaining to a colleague
+
+**Writing guidelines:**
+- Lead with the main purpose/benefit
+- Use active voice ("This function calculates..." not "Calculations are performed...")
+- Avoid jargon when possible, explain when necessary
+- Give practical context ("Perfect for validating user input" not "Performs validation")
+- Be concise but complete
+- Make it interesting - show why someone should care
+
+**Example style:**
+Instead of: "This function performs data validation operations on input parameters"
+Write: "Validates user input and catches common mistakes before they cause problems in your app"
+
+**Your response should be 1-3 sentences that immediately make the code's purpose and value clear.**`;
     }
 
     private async makeAPIRequest(model: string, prompt: string): Promise<any> {
