@@ -1,0 +1,179 @@
+{
+  "name": "doc-generator-extension",
+  "displayName": "Auto Documentation Generator",
+  "description": "Automatically generates and maintains project documentation on every Git commit",
+  "version": "0.1.0",
+  "publisher": "autodoc",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Documentation",
+    "Other"
+  ],
+  "keywords": [
+    "documentation",
+    "auto-documentation",
+    "git",
+    "markdown",
+    "readme"
+  ],
+  "activationEvents": [
+    "onCommand:docGenerator.generateDocs",
+    "onCommand:docGenerator.updateDocs",
+    "onCommand:docGenerator.configureDocs",
+    "onCommand:docGenerator.previewChanges",
+    "workspaceContains:**/.git"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "docGenerator.generateDocs",
+        "title": "Generate Documentation",
+        "category": "Doc Generator"
+      },
+      {
+        "command": "docGenerator.updateDocs",
+        "title": "Update Documentation",
+        "category": "Doc Generator"
+      },
+      {
+        "command": "docGenerator.configureDocs",
+        "title": "Configure Settings",
+        "category": "Doc Generator"
+      },
+      {
+        "command": "docGenerator.previewChanges",
+        "title": "Preview Changes",
+        "category": "Doc Generator"
+      }
+    ],
+    "configuration": {
+      "title": "Documentation Generator",
+      "properties": {
+        "docGenerator.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable the documentation generator"
+        },
+        "docGenerator.autoUpdate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically update documentation on file changes"
+        },
+        "docGenerator.includePrivate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include private methods and classes in documentation"
+        },
+        "docGenerator.outputDirectory": {
+          "type": "string",
+          "default": "./docs",
+          "description": "Directory to output generated documentation"
+        },
+        "docGenerator.templatePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to custom documentation templates"
+        },
+        "docGenerator.excludePatterns": {
+          "type": "array",
+          "default": [
+            "node_modules/**",
+            "dist/**",
+            "*.test.*"
+          ],
+          "description": "File patterns to exclude from documentation generation"
+        },
+        "docGenerator.supportedLanguages": {
+          "type": "array",
+          "default": [
+            "typescript",
+            "javascript",
+            "python"
+          ],
+          "description": "Programming languages to analyze for documentation"
+        },
+        "docGenerator.gitIntegration": {
+          "type": "object",
+          "default": {
+            "preCommitHook": true,
+            "autoStage": true,
+            "commitMessage": "docs: update documentation"
+          },
+          "description": "Git integration settings"
+        }
+      }
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "docGeneratorView",
+          "name": "Documentation",
+          "when": "docGenerator.enabled"
+        }
+      ]
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "docGenerator.generateDocs",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "docGenerator.updateDocs",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "docGenerator.configureDocs"
+        },
+        {
+          "command": "docGenerator.previewChanges",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "webpack --mode production",
+    "watch": "webpack --mode development --watch",
+    "package": "vsce package",
+    "test": "npm run compile && node ./out/test/runTest.js",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vscode/test-electron": "^2.3.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.0.0",
+    "ts-loader": "^9.0.0",
+    "typescript": "^5.0.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0"
+  },
+  "dependencies": {
+    "@typescript-eslint/parser": "^6.0.0",
+    "cheerio": "^1.0.0-rc.12",
+    "markdown-it": "^13.0.0",
+    "simple-git": "^3.19.0",
+    "typescript": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/autodoc/doc-generator-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/autodoc/doc-generator-extension/issues"
+  },
+  "homepage": "https://github.com/autodoc/doc-generator-extension#readme",
+  "icon": "media/icon.png"
+}
