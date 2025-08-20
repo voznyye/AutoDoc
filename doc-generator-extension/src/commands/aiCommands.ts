@@ -106,9 +106,7 @@ export class AICommands {
                     const currentSettings = this.getCurrentAISettings();
                     panel.webview.postMessage({ command: 'currentSettings', settings: currentSettings });
                     break;
-                case 'createEnvFile':
-                    await this.createEnvTemplate();
-                    break;
+
             }
         });
     }
@@ -294,12 +292,10 @@ export class AICommands {
         if (!aiEnabled) {
             vscode.window.showWarningMessage(
                 'AI features are disabled. Enable them in settings to use AI-powered documentation.',
-                'Enable AI', 'Setup .env'
+                'Enable AI'
             ).then((selection) => {
                 if (selection === 'Enable AI') {
                     this.configureAI();
-                } else if (selection === 'Setup .env') {
-                    this.createEnvTemplate();
                 }
             });
             return false;
@@ -308,13 +304,11 @@ export class AICommands {
         const isConfigured = await aiService.isConfigured();
         if (!isConfigured) {
             vscode.window.showWarningMessage(
-                'AI service is not configured. Please set your OpenRouter API key in .env file or environment variables.',
-                'Configure AI', 'Setup .env', 'Learn More'
+                'AI service is not configured. Please set your OpenRouter API key in system environment variables.',
+                'Configure AI', 'Learn More'
             ).then((selection) => {
                 if (selection === 'Configure AI') {
                     this.configureAI();
-                } else if (selection === 'Setup .env') {
-                    this.createEnvTemplate();
                 } else if (selection === 'Learn More') {
                     vscode.env.openExternal(vscode.Uri.parse('https://github.com/voznyye/AutoDoc#secure-setup'));
                 }
@@ -325,30 +319,7 @@ export class AICommands {
         return true;
     }
 
-    /**
-     * Create .env template file
-     */
-    private async createEnvTemplate(): Promise<void> {
-        try {
-            await environmentManager.createEnvTemplate();
-            vscode.window.showInformationMessage(
-                '✅ Created .env.example template file. Copy it to .env and add your API keys.',
-                'Open .env.example'
-            ).then((selection) => {
-                if (selection === 'Open .env.example') {
-                    const workspaceFolders = vscode.workspace.workspaceFolders;
-                    if (workspaceFolders && workspaceFolders.length > 0) {
-                        const envExamplePath = vscode.Uri.joinPath(workspaceFolders[0].uri, '.env.example');
-                        vscode.workspace.openTextDocument(envExamplePath).then(doc => {
-                            vscode.window.showTextDocument(doc);
-                        });
-                    }
-                }
-            });
-        } catch (error) {
-            vscode.window.showErrorMessage(`Failed to create .env template: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    }
+
 
     private async saveDocumentation(content: string, filename: string): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -546,7 +517,7 @@ export class AICommands {
     <div class="setting-group">
         <label for="apiKey">OpenRouter API Key:</label>
         <input type="password" id="apiKey" placeholder="sk-or-..." />
-        <small>🔐 <strong>Secure Storage:</strong> Keys are stored in .env files, not VSCode settings<br/>
+        <small>🔐 <strong>Secure Storage:</strong> Keys are stored in system environment variables only<br/>
         Get your free API key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></small>
     </div>
 
@@ -586,8 +557,7 @@ export class AICommands {
 
     <div>
         <button onclick="testConnection()">🔧 Test Connection</button>
-        <button onclick="saveSettings()">💾 Save Settings</button>
-        <button onclick="createEnvFile()">🔐 Setup .env File</button>
+        <button onclick="saveSettings()">💾 Save API Key to System</button>
         <button onclick="resetSettings()">🔄 Reset to Defaults</button>
     </div>
 
@@ -703,9 +673,7 @@ export class AICommands {
             document.getElementById('testResult').innerHTML = '<div style="color: orange;">Testing connection...</div>';
         }
 
-        function createEnvFile() {
-            vscode.postMessage({ command: 'createEnvFile' });
-        }
+
 
         function resetSettings() {
             if (confirm('Reset all AI settings to defaults?')) {
@@ -747,9 +715,9 @@ export class AICommands {
     private async saveAISettings(settings: any): Promise<void> {
         const config = vscode.workspace.getConfiguration('docGenerator.ai');
         
-        // Save API key securely to .env file if provided
+        // Save API key to system environment variable if provided
         if (settings.openRouterApiKey && settings.openRouterApiKey.trim()) {
-            await this.saveApiKeyToEnv(settings.openRouterApiKey.trim());
+            await this.saveApiKeyToSystem(settings.openRouterApiKey.trim());
         }
         
         // Save non-sensitive settings to VSCode configuration
@@ -767,59 +735,36 @@ export class AICommands {
         await environmentManager.reload();
     }
 
-    private async saveApiKeyToEnv(apiKey: string): Promise<void> {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders || workspaceFolders.length === 0) {
-            throw new Error('No workspace folder found');
-        }
-
-        const envPath = environmentManager.getEnvFilePath();
-        if (!envPath) {
-            throw new Error('Could not determine .env file path');
-        }
-
+    private async saveApiKeyToSystem(apiKey: string): Promise<void> {
         try {
-            let envContent = '';
-            
-            // Read existing .env file if it exists
-            try {
-                const fs = await import('fs');
-                if (fs.existsSync(envPath)) {
-                    envContent = await fs.promises.readFile(envPath, 'utf8');
-                }
-            } catch (error) {
-                // File doesn't exist, that's ok
-            }
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Saving API key to system environment...',
+                cancellable: false
+            }, async (progress) => {
+                progress.report({ increment: 0, message: 'Setting system environment variable...' });
+                
+                await environmentManager.setSystemEnvironmentVariable('OPENROUTER_API_KEY', apiKey);
+                
+                progress.report({ increment: 100, message: 'Done!' });
+            });
 
-            // Update or add the API key
-            const lines = envContent.split('\n');
-            let found = false;
-            
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].startsWith('OPENROUTER_API_KEY=')) {
-                    lines[i] = `OPENROUTER_API_KEY=${apiKey}`;
-                    found = true;
-                    break;
+            const platform = process.platform;
+            const restartMessage = platform === 'win32' 
+                ? 'API key saved to system environment! Please restart VSCode/Cursor for changes to take effect.'
+                : 'API key saved to system environment! Please restart VSCode/Cursor or reload your shell.';
+
+            vscode.window.showInformationMessage(
+                `✅ ${restartMessage}`,
+                'Restart Now'
+            ).then((selection) => {
+                if (selection === 'Restart Now') {
+                    vscode.commands.executeCommand('workbench.action.reloadWindow');
                 }
-            }
-            
-            if (!found) {
-                // Add new line if file doesn't end with newline
-                if (envContent && !envContent.endsWith('\n')) {
-                    lines.push('');
-                }
-                lines.push(`OPENROUTER_API_KEY=${apiKey}`);
-            }
-            
-            // Write back to file
-            const fs = await import('fs');
-            await fs.promises.writeFile(envPath, lines.join('\n'), 'utf8');
-            
-            // Set file permissions to be readable only by owner
-            await fs.promises.chmod(envPath, 0o600);
+            });
             
         } catch (error) {
-            throw new Error(`Failed to save API key to .env file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            throw new Error(`Failed to save API key to system environment: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 

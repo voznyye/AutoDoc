@@ -119,46 +119,9 @@ export class FirstTimeSetup {
                 return false;
             }
 
-            // Step 3: Choose setup method
-            const setupMethod = await vscode.window.showQuickPick([
-                {
-                    label: '🔐 .env file (Recommended)',
-                    description: 'Secure, project-specific, ignored by Git',
-                    detail: 'Creates a .env file in your workspace root'
-                },
-                {
-                    label: '🌍 Environment Variable',
-                    description: 'System-wide, most secure',
-                    detail: 'Sets OPENROUTER_API_KEY environment variable'
-                },
-                {
-                    label: '⚠️ VSCode Settings',
-                    description: 'Quick but less secure',
-                    detail: 'Stores in VSCode settings (not recommended for production)'
-                }
-            ], {
-                placeHolder: 'Choose how to store your API key',
-                ignoreFocusOut: true
-            });
-
-            if (!setupMethod) {
-                return false;
-            }
-
-            // Step 4: Save the API key
-            let saved = false;
-            switch (setupMethod.label) {
-                case '🔐 .env file (Recommended)':
-                    saved = await this.saveToEnvFile(apiKey);
-                    break;
-                case '🌍 Environment Variable':
-                    saved = await this.saveToEnvironment(apiKey);
-                    break;
-                case '⚠️ VSCode Settings':
-                    saved = await this.saveToSettings(apiKey);
-                    break;
-            }
-
+            // Step 3: Save to system environment variable
+            const saved = await this.saveToSystemEnvironment(apiKey);
+            
             if (!saved) {
                 return false;
             }
@@ -214,133 +177,73 @@ export class FirstTimeSetup {
     }
 
     /**
-     * Save API key to .env file
+     * Save API key to system environment variable
      */
-    private static async saveToEnvFile(apiKey: string): Promise<boolean> {
+    private static async saveToSystemEnvironment(apiKey: string): Promise<boolean> {
         try {
-            await environmentManager.createEnvTemplate();
+            const platform = process.platform;
             
-            const envPath = environmentManager.getEnvFilePath();
-            if (!envPath) {
-                throw new Error('Could not determine .env file path');
+            const proceed = await vscode.window.showInformationMessage(
+                `🔐 Saving API key to system environment variables\n\n` +
+                `This will add OPENROUTER_API_KEY to your system environment.\n` +
+                `${platform === 'win32' ? 'Windows: Uses setx command' : 'macOS/Linux: Adds to shell profile'}\n\n` +
+                `✅ Most secure option\n` +
+                `✅ Works system-wide\n` +
+                `✅ No files to accidentally commit\n\n` +
+                `Continue?`,
+                { modal: true },
+                'Save to System',
+                'Cancel'
+            );
+
+            if (proceed !== 'Save to System') {
+                return false;
             }
 
-            // Update the .env file with the API key
-            const fs = await import('fs');
-            let envContent = `OPENROUTER_API_KEY=${apiKey}\n`;
-            
-            // If .env.example exists, use it as a template
-            const examplePath = envPath.replace('.env', '.env.example');
-            if (fs.existsSync(examplePath)) {
-                const template = await fs.promises.readFile(examplePath, 'utf8');
-                envContent = template.replace(
-                    /^OPENROUTER_API_KEY=$/m,
-                    `OPENROUTER_API_KEY=${apiKey}`
-                );
-            }
-
-            await fs.promises.writeFile(envPath, envContent, 'utf8');
-            await fs.promises.chmod(envPath, 0o600);
-
-            vscode.window.showInformationMessage(
-                `✅ API key saved to .env file\n📁 Location: ${envPath}`,
-                'View .env File'
-            ).then((selection) => {
-                if (selection === 'View .env File') {
-                    vscode.workspace.openTextDocument(envPath).then(doc => {
-                        vscode.window.showTextDocument(doc);
-                    });
+            // Show progress while setting environment variable
+            const success = await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Setting system environment variable...',
+                cancellable: false
+            }, async (progress) => {
+                try {
+                    progress.report({ increment: 0, message: 'Configuring system environment...' });
+                    
+                    await environmentManager.setSystemEnvironmentVariable('OPENROUTER_API_KEY', apiKey);
+                    
+                    progress.report({ increment: 100, message: 'Done!' });
+                    return true;
+                } catch (error) {
+                    console.error('Failed to set environment variable:', error);
+                    return false;
                 }
             });
 
-            return true;
+            if (success) {
+                const restartMessage = platform === 'win32' 
+                    ? 'Environment variable set! Please restart VSCode/Cursor for changes to take effect.'
+                    : 'Environment variable added to shell profile! Please restart VSCode/Cursor or reload your shell.';
+
+                vscode.window.showInformationMessage(
+                    `✅ ${restartMessage}`,
+                    'Restart Now'
+                ).then((selection) => {
+                    if (selection === 'Restart Now') {
+                        vscode.commands.executeCommand('workbench.action.reloadWindow');
+                    }
+                });
+                
+                return true;
+            } else {
+                vscode.window.showErrorMessage(
+                    'Failed to set system environment variable. Please set OPENROUTER_API_KEY manually.'
+                );
+                return false;
+            }
+            
         } catch (error) {
             vscode.window.showErrorMessage(
-                `Failed to save to .env file: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
-            return false;
-        }
-    }
-
-    /**
-     * Save API key to environment variable (show instructions)
-     */
-    private static async saveToEnvironment(apiKey: string): Promise<boolean> {
-        const platform = process.platform;
-        let instructions = '';
-
-        if (platform === 'win32') {
-            instructions = `Windows Setup:\n\n` +
-                `1. Open System Properties → Environment Variables\n` +
-                `2. Add new system variable:\n` +
-                `   Name: OPENROUTER_API_KEY\n` +
-                `   Value: ${apiKey}\n\n` +
-                `Or use Command Prompt:\n` +
-                `setx OPENROUTER_API_KEY "${apiKey}"\n\n` +
-                `Restart VSCode/Cursor after setting the variable.`;
-        } else {
-            const shell = process.env.SHELL?.includes('zsh') ? 'zsh' : 'bash';
-            const rcFile = shell === 'zsh' ? '~/.zshrc' : '~/.bashrc';
-            
-            instructions = `macOS/Linux Setup:\n\n` +
-                `1. Add to your shell profile (${rcFile}):\n` +
-                `   export OPENROUTER_API_KEY="${apiKey}"\n\n` +
-                `2. Reload your shell:\n` +
-                `   source ${rcFile}\n\n` +
-                `3. Restart VSCode/Cursor\n\n` +
-                `Or run this command:\n` +
-                `echo 'export OPENROUTER_API_KEY="${apiKey}"' >> ${rcFile}`;
-        }
-
-        await vscode.env.clipboard.writeText(apiKey);
-        
-        const result = await vscode.window.showInformationMessage(
-            `🌍 Environment Variable Setup\n\n${instructions}\n\n📋 API key copied to clipboard`,
-            { modal: true },
-            'Done',
-            'Copy Instructions'
-        );
-
-        if (result === 'Copy Instructions') {
-            await vscode.env.clipboard.writeText(instructions);
-        }
-
-        // Assume user will set it up correctly
-        return result === 'Done';
-    }
-
-    /**
-     * Save API key to VSCode settings (with warning)
-     */
-    private static async saveToSettings(apiKey: string): Promise<boolean> {
-        const proceed = await vscode.window.showWarningMessage(
-            '⚠️ Security Warning\n\n' +
-            'Storing API keys in VSCode settings is not recommended for production use. ' +
-            'The key will be stored in plain text in your settings file.\n\n' +
-            'For better security, consider using .env files or environment variables.',
-            { modal: true },
-            'Proceed Anyway',
-            'Use .env Instead'
-        );
-
-        if (proceed === 'Use .env Instead') {
-            return await this.saveToEnvFile(apiKey);
-        } else if (proceed !== 'Proceed Anyway') {
-            return false;
-        }
-
-        try {
-            const config = vscode.workspace.getConfiguration('docGenerator.ai');
-            await config.update('openRouterApiKey', apiKey, vscode.ConfigurationTarget.Workspace);
-            
-            vscode.window.showInformationMessage(
-                '✅ API key saved to VSCode settings\n⚠️ Remember to remove it before sharing your workspace'
-            );
-            
-            return true;
-        } catch (error) {
-            vscode.window.showErrorMessage(
-                `Failed to save to settings: ${error instanceof Error ? error.message : 'Unknown error'}`
+                `Failed to save API key: ${error instanceof Error ? error.message : 'Unknown error'}`
             );
             return false;
         }

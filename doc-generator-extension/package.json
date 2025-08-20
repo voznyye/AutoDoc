@@ -2,7 +2,7 @@
   "name": "auto-documentation-generator",
   "displayName": "Auto Documentation Generator",
   "description": "AI-powered documentation generator that automatically creates and maintains project documentation with smart code analysis, free AI models, and Git integration",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "publisher": "voznyye",
   "engines": {
     "vscode": "^1.80.0"
