@@ -2,7 +2,7 @@
   "name": "ai-documentation-generator",
   "displayName": "AI Documentation Generator",
   "description": "AI-powered VS Code/Cursor extension that automatically generates and maintains comprehensive project documentation using DeepSeek R1T2 Chimera AI model",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "publisher": "voznyye",
   "engines": {
     "vscode": "^1.80.0"
