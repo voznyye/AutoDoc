@@ -1,281 +1,244 @@
-# 🤖 AI Documentation Generator - AutoDoc Project
+# 🤖 AI Documentation Generator
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-![VSCode](https://img.shields.io/badge/VSCode-1.80.0+-blue.svg)
-![AI Powered](https://img.shields.io/badge/AI-powered-purple.svg)
-![Refactored](https://img.shields.io/badge/refactored-v2.0.0-brightgreen.svg)
+![VS Code](https://img.shields.io/badge/VS%20Code-Extension-green.svg)
+![AI Powered](https://img.shields.io/badge/AI-DeepSeek%20R1T2%20Chimera-purple.svg)
+![Free](https://img.shields.io/badge/AI%20Model-Free-brightgreen.svg)
 
-**🎉 MAJOR REFACTORING COMPLETE!** This repository contains a **streamlined, AI-powered VS Code/Cursor extension** that automatically generates and maintains comprehensive project documentation using intelligent AI analysis.
+**Automatically generate and maintain comprehensive project documentation using advanced AI models.**
 
-## ⚡ What's New in v2.0.0
+The AI Documentation Generator is a powerful VS Code/Cursor extension that leverages DeepSeek R1T2 Chimera (671B parameters) to create professional-grade documentation for any codebase. Transform your projects with intelligent, comprehensive documentation that stays synchronized with your code changes.
 
-**🎯 Focused AI-Only Approach:**
-- **2 main commands** (down from 10) - Generate & Update documentation  
-- **100% AI-powered** - No manual workflows
-- **Simplified setup** - Just API key + model selection
-- **8 essential settings** (down from 16) - Streamlined configuration
-- **Template-free** - AI generates dynamic, contextual content
+## ✨ Key Features
 
-## 📁 Streamlined Project Structure (v2.0.0)
+### 🧠 **AI-Powered Intelligence**
+- **DeepSeek R1T2 Chimera**: 671B-parameter mixture-of-experts model with superior reasoning
+- **163k Context Window**: Analyze entire codebases in a single pass
+- **Professional Quality**: Enterprise-grade documentation generation
+- **Free Access**: No cost barriers via OpenRouter integration
 
-```
-AutoDoc/
-├── README.md                           # 🆕 Updated project overview
-├── REFACTORING_SUMMARY.md              # 🆕 Complete refactoring details
-├── documentation-plugin-prompt.md      # Original technical specification  
-├── USAGE_EXAMPLES.md                   # Usage examples for different projects
-├── WORKFLOW_GUIDE.md                   # Team workflow guide
-├── PUBLISHING_GUIDE.md                 # Publishing to VSCode Marketplace
-├── QUICK_START.md                      # Quick start guide
-└── doc-generator-extension/             # 🤖 Streamlined AI Plugin
-    ├── package.json                     # ✅ Updated v2.0.0 configuration
-    ├── tsconfig.json                    # TypeScript configuration
-    ├── webpack.config.js                # Build configuration
-    ├── README.md                        # Plugin documentation
-    ├── CHANGELOG.md                     # Change history
-    ├── LICENSE                          # MIT License
-    ├── src/                             # 🧹 Cleaned source code
-    │   ├── extension.ts                 # ✅ Simplified activation (2 commands)
-    │   ├── commands/
-    │   │   └── aiCommands.ts            # ✅ All AI operations centralized
-    │   ├── generators/
-    │   │   ├── readmeGenerator.ts       # ✅ Base generator class
-    │   │   └── aiEnhancedReadmeGenerator.ts # ✅ AI-powered generation
-    │   ├── providers/
-    │   │   ├── documentationProvider.ts # ✅ Core analysis (simplified)
-    │   │   └── gitHookProvider.ts       # ✅ Git integration (simplified)
-    │   ├── services/
-    │   │   └── aiService.ts             # ✅ Core AI integration
-    │   ├── analyzers/
-    │   │   └── codeAnalyzer.ts          # ✅ Project analysis
-    │   └── utils/                       # ✅ Essential utilities
-    │       ├── fileUtils.ts             # File operations
-    │       ├── gitUtils.ts              # Git operations  
-    │       ├── environmentManager.ts    # Secure API key management
-    │       └── firstTimeSetup.ts        # AI setup wizard
-    ├── media/                           # Media files
-    │   ├── icon.svg                     # Plugin icon
-    │   └── icon.png                     # Plugin icon (PNG)
-    └── out/                             # Compiled files
-```
+### 📚 **Comprehensive Documentation**
+- **Complete Project Analysis**: Every function, class, and module documented
+- **Architecture Diagrams**: System design and component relationships
+- **API Reference**: Full technical specifications with examples
+- **User Guides**: Installation, setup, and usage instructions
+- **Real-time Updates**: Automatic synchronization with code changes
 
-### 🗑️ Removed in Refactoring:
-- ❌ `commands/generateDocs.ts` - Replaced by AI-only approach
-- ❌ `commands/updateDocs.ts` - Integrated into aiCommands.ts
-- ❌ `commands/configureDocs.ts` - Simplified to AI config only
-- ❌ `providers/configurationProvider.ts` - No longer needed
-- ❌ `generators/changelogGenerator.ts` - AI generates dynamically
-- ❌ `generators/markdownGenerator.ts` - AI generates dynamically  
-- ❌ `templates/` directory - AI creates content without templates
+### ⚡ **Seamless Integration**
+- **Git Hooks**: Auto-update on commits and file changes
+- **Multi-language Support**: TypeScript, JavaScript, Python, Java, C#, Go, Rust, and more
+- **VS Code Native**: Deep integration with VS Code/Cursor ecosystem
+- **Zero Configuration**: Works out-of-the-box with minimal setup
 
-## 🚀 Streamlined AI Features (v2.0.0)
+## 🚀 Quick Start
 
-### 🤖 AI-Powered Core Features
-- **🎯 2 Main Commands**: Generate Project Documentation & Update Documentation
-- **🧠 100% AI-Driven**: Uses free OpenRouter models for intelligent documentation
-- **🔄 Auto-Updates**: Monitors file changes and Git commits for documentation sync
-- **🌍 Universal Language Support**: AI automatically detects and analyzes any programming language
-- **📄 Dynamic Content**: No templates - AI generates contextual, human-readable documentation
-- **🔒 Secure Setup**: API keys stored only in system environment variables
+### Installation
 
-### 🎨 Simplified User Experience  
-- **⚡ One-Click Generation**: Single command creates comprehensive project docs
-- **📊 Real-Time Status**: Status bar shows AI operation progress
-- **🔧 Streamlined Config**: Simple AI model selection and basic preferences
-- **🎯 Smart Setup Wizard**: Guided first-time AI configuration
+1. **From VS Code Marketplace**:
+   - Search for "AI Documentation Generator" by voznyye
+   - Click Install
 
-### 🔧 AI Technical Features
-- **🔍 Intelligent Code Analysis**: Deep AST parsing for accurate project understanding
-- **📝 Context-Aware Generation**: AI analyzes project structure, dependencies, and code patterns
-- **🔄 Smart Updates**: AI preserves custom content while refreshing technical details
-- **⚡ Free AI Models**: 5 high-quality, free models optimized for documentation tasks
-- **🌐 Cross-Platform**: Works on Windows, macOS, and Linux
-- **Asynchronous processing** without UI blocking
+2. **Command Line**:
+   ```bash
+   code --install-extension voznyye.auto-documentation-generator
+   ```
 
-## 📦 Installation and Usage
+3. **Direct Download**:
+   - Visit: https://marketplace.visualstudio.com/items?itemName=voznyye.auto-documentation-generator
 
-### Requirements
-- Node.js 16+
-- VSCode 1.80.0+
-- Git (for integration)
+### Setup (2-minute process)
 
-### Install Dependencies
+1. **Get Free API Key**:
+   - Visit https://openrouter.ai/keys
+   - Create free account and generate API key
+
+2. **Configure Extension**:
+   - Open Command Palette (`Ctrl/Cmd + Shift + P`)
+   - Run: `AI Doc Generator: Configure AI Settings`
+   - Enter your OpenRouter API key
+
+3. **Generate Documentation**:
+   - Run: `AI Doc Generator: Generate Project Documentation`
+   - Watch as comprehensive docs are created automatically!
+
+## 💡 Usage Examples
+
+### For New Projects
 ```bash
-cd doc-generator-extension
-npm install
+# 1. Open your project in VS Code
+code my-awesome-project/
+
+# 2. Generate complete documentation
+# Command Palette → "Generate Project Documentation"
 ```
 
-### Compile
+**Result**: Professional README.md + PROJECT_OVERVIEW.md with:
+- Complete feature documentation
+- API references with examples
+- Installation and setup guides
+- Architecture explanations
+
+### For Existing Projects
 ```bash
-npm run compile
+# Update documentation after code changes
+# Command Palette → "Update Documentation"
 ```
 
-### Development
-```bash
-npm run watch
+**Result**: Intelligent updates that:
+- Analyze recent changes
+- Update affected sections
+- Maintain documentation consistency
+- Preserve custom content
+
+### Automatic Updates
+Enable Git integration for hands-free documentation:
+- Documentation updates automatically on commits
+- Real-time synchronization with code changes
+- Consistent quality across team contributions
+
+## 🏗️ How It Works
+
+### 1. **Intelligent Code Analysis**
+```mermaid
+graph LR
+    A[Your Codebase] --> B[AI Analysis Engine]
+    B --> C[DeepSeek R1T2 Chimera]
+    C --> D[Professional Documentation]
 ```
 
-### Test in VSCode
-1. Open `doc-generator-extension` folder in VSCode
-2. Press `F5` to launch Extension Development Host
-3. In the new VSCode window, open any project
-4. Use commands from Command Palette (`Ctrl+Shift+P`)
+- Scans entire project structure
+- Identifies functions, classes, modules
+- Maps dependencies and relationships
+- Analyzes code patterns and architecture
 
-## 🎯 Using the Plugin
+### 2. **AI-Powered Generation**
+- **Context-Aware**: Understands your project's purpose and design
+- **Comprehensive**: Documents every aspect from high-level overview to technical details
+- **Professional**: Follows documentation best practices and standards
+- **Consistent**: Maintains uniform style and formatting
 
-### Plugin Commands
-- `Doc Generator: Generate Documentation` - Generate complete documentation
-- `Doc Generator: Update Documentation` - Update existing documentation
-- `Doc Generator: Configure Settings` - Open configuration wizard
-- `Doc Generator: Preview Changes` - Preview documentation changes
+### 3. **Continuous Maintenance**
+- **Smart Updates**: Only updates sections affected by code changes
+- **Version Control**: Integrates seamlessly with Git workflows
+- **Team Friendly**: Maintains consistency across multiple contributors
 
-### Configuration
-Configure through VSCode settings.json:
+## 🎯 Use Cases
 
+### **For Individual Developers**
+- **Open Source Projects**: Create professional READMEs that attract contributors
+- **Portfolio Projects**: Showcase your code with comprehensive documentation
+- **Learning Projects**: Document your learning journey and code decisions
+
+### **For Development Teams**
+- **API Documentation**: Maintain up-to-date technical specifications
+- **Onboarding**: Help new team members understand codebase architecture
+- **Knowledge Sharing**: Preserve institutional knowledge in documentation
+
+### **For Project Managers**
+- **Stakeholder Communication**: Explain technical projects in accessible language
+- **Progress Tracking**: Document feature development and architectural decisions
+- **Compliance**: Maintain documentation standards for enterprise requirements
+
+## 🛠️ Advanced Features
+
+### **Configuration Options**
 ```json
 {
-  "docGenerator.enabled": true,
-  "docGenerator.autoUpdate": true,
-  "docGenerator.includePrivate": false,
-  "docGenerator.outputDirectory": "./docs",
-  "docGenerator.supportedLanguages": [
-    "typescript",
-    "javascript", 
-    "python"
-  ],
-  "docGenerator.gitIntegration": {
-    "preCommitHook": true,
-    "autoStage": true,
-    "commitMessage": "docs: update documentation"
-  }
+  "docGenerator.autoUpdate": true,           // Auto-update on file changes
+  "docGenerator.ai.maxTokens": 8192,         // DeepSeek context size
+  "docGenerator.ai.temperature": 0.1,        // Consistency level
+  "docGenerator.excludePatterns": [          // Files to ignore
+    "node_modules/**",
+    "*.test.*"
+  ]
 }
 ```
 
-## 🔄 Git Integration
+### **File Structure Support**
+- **Multi-root Workspaces**: Handle complex project structures
+- **Monorepos**: Document individual packages and overall architecture
+- **Legacy Codebases**: Understand and document existing code patterns
 
-The plugin automatically:
-- Installs pre-commit hooks
-- Updates documentation before commits
-- Stages changed documentation files
-- Uses configurable commit messages
+### **Output Formats**
+- **README.md**: User-friendly project overview
+- **PROJECT_OVERVIEW.md**: Technical architecture documentation
+- **API.md**: Detailed API reference (coming soon)
+- **Custom Templates**: Extensible documentation formats
 
-## 📋 Generated Documentation
+## 🔧 Troubleshooting
 
-### README.md
-- Project description
-- Installation instructions
-- Usage examples
-- API overview
-- Project structure
+### **Common Issues**
 
-### API Documentation
-- Detailed API reference
-- Function signatures and parameters
-- Class hierarchies
-- Interface definitions
-
-### CHANGELOG.md
-- Version history
-- Categorized changes
-- Automatic version detection
-
-## 🏗️ Architecture
-
-### Core Components
-1. **Extension.ts** - Entry point and activation
-2. **DocumentationProvider** - Main generation logic
-3. **CodeAnalyzer** - Source code analysis with AST
-4. **Generators** - Create different documentation types
-5. **GitHookProvider** - Git integration
-6. **ConfigurationProvider** - Settings management
-
-### Data Flow
-```
-Source Code → CodeAnalyzer → AnalysisResult → Generators → Documentation Files → Git Integration
-```
-
-## 🧪 Testing
-
+**API Key Not Working?**
 ```bash
-# Compile
-npm run compile
-
-# Lint
-npm run lint
-
-# Fix linting
-npm run lint:fix
+# Verify your API key is valid
+curl -H "Authorization: Bearer YOUR_KEY" https://openrouter.ai/api/v1/models
 ```
 
-## 📦 Publishing to VSCode Marketplace
+**Extension Not Activating?**
+- Ensure you have a Git repository in your workspace
+- Check VS Code Developer Tools (Help → Toggle Developer Tools)
+- Restart VS Code after installation
 
-### 1. Install vsce
-```bash
-npm install -g @vscode/vsce
-```
+**Documentation Quality Issues?**
+- Ensure your code has meaningful function/class names
+- Add comments for complex logic
+- Check that file patterns aren't excluding important code
 
-### 2. Create Publisher Account
-1. Go to https://dev.azure.com
-2. Create organization
-3. Generate Personal Access Token
-
-### 3. Create Publisher
-```bash
-vsce create-publisher your-publisher-name
-vsce login your-publisher-name
-```
-
-### 4. Package and Publish
-```bash
-# Create .vsix package
-vsce package
-
-# Publish to Marketplace
-vsce publish
-```
-
-## 📝 Development
-
-### Adding New Language Support
-1. Extend `CodeAnalyzer.ts`
-2. Add parsing for specific constructs
-3. Update `supportedLanguages` configuration
-
-### Creating New Generator
-1. Create class in `generators/` folder
-2. Implement generation interface
-3. Integrate with `DocumentationProvider`
-
-### Custom Templates
-1. Create template in `templates/` folder
-2. Use Handlebars syntax
-3. Configure path in settings
+### **Performance Tips**
+- **Large Projects**: Use exclude patterns to focus on main code
+- **Faster Updates**: Enable auto-update for real-time documentation
+- **Quality**: Lower temperature (0.1) for consistent output
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create feature branch
-3. Make changes
-4. Add tests
-5. Create Pull Request
+We welcome contributions to make AI Documentation Generator even better!
+
+### **Development Setup**
+```bash
+# Clone the repository
+git clone https://github.com/voznyye/AutoDoc
+cd AutoDoc/doc-generator-extension
+
+# Install dependencies
+npm install
+
+# Start development
+npm run watch
+```
+
+### **How to Contribute**
+1. **Report Issues**: Share bugs or feature requests on GitHub
+2. **Submit PRs**: Improve code, fix bugs, add features
+3. **Documentation**: Help improve guides and examples
+4. **Testing**: Test with different project types and provide feedback
+
+### **Areas for Contribution**
+- Additional programming language support
+- Documentation template improvements
+- Performance optimizations
+- UI/UX enhancements
 
 ## 📄 License
 
-MIT License - see [LICENSE](doc-generator-extension/LICENSE) file
+MIT License - see [LICENSE](LICENSE) file for details.
 
-## 🎉 Conclusion
+## 🙏 Acknowledgments
 
-This project provides a complete solution for automatic documentation generation that:
-
-✅ **Fully implements** all requirements from the technical specification  
-✅ **Ready for production** use  
-✅ **Easily extensible** for new languages and formats  
-✅ **Integrates** with existing workflows  
-✅ **Optimized** for large projects  
-
-The plugin can be published to VSCode Marketplace and used by developers to automate documentation creation and maintenance processes.
+- **DeepSeek**: For the incredible R1T2 Chimera model
+- **OpenRouter**: For providing free AI model access
+- **VS Code Team**: For the excellent extension APIs
+- **Community**: For feedback and contributions
 
 ---
 
-*Made with ❤️ for developers who value quality documentation*
+## 🔗 Links
+
+- **Marketplace**: https://marketplace.visualstudio.com/items?itemName=voznyye.auto-documentation-generator
+- **GitHub**: https://github.com/voznyye/AutoDoc
+- **Issues**: https://github.com/voznyye/AutoDoc/issues
+- **OpenRouter**: https://openrouter.ai
+
+---
+
+*Transform your documentation workflow today with AI-powered intelligence! 🚀*
