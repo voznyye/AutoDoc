@@ -1,8 +1,8 @@
 {
-  "name": "auto-documentation-generator",
+  "name": "ai-documentation-generator",
   "displayName": "AI Documentation Generator",
-  "description": "AI-powered VS Code/Cursor extension that automatically generates and maintains comprehensive project documentation using free AI models and intelligent code analysis",
-  "version": "2.0.1",
+  "description": "AI-powered VS Code/Cursor extension that automatically generates and maintains comprehensive project documentation using DeepSeek R1T2 Chimera AI model",
+  "version": "2.2.0",
   "publisher": "voznyye",
   "engines": {
     "vscode": "^1.80.0"
@@ -18,7 +18,7 @@
     "project-documentation",
     "readme-generator",
     "code-analysis",
-    "openrouter",
+    "deepseek",
     "free-ai",
     "git-integration",
     "markdown",
@@ -34,43 +34,38 @@
   "contributes": {
     "commands": [
       {
-        "command": "docGenerator.generateProjectDocs",
+        "command": "ai-doc-generator.generate",
         "title": "Generate Project Documentation",
         "category": "AI Doc Generator",
         "icon": "$(book)"
       },
       {
-        "command": "docGenerator.updateDocs",
-        "title": "Update Documentation",
-        "category": "AI Doc Generator",
-        "icon": "$(sync)"
-      },
-      {
-        "command": "docGenerator.configureAI",
+        "command": "ai-doc-generator.configure",
         "title": "Configure AI Settings",
         "category": "AI Doc Generator",
         "icon": "$(settings-gear)"
+      },
+      {
+        "command": "ai-doc-generator.toggleAutoUpdate",
+        "title": "Toggle Auto-Update Documentation on Commit",
+        "category": "AI Doc Generator",
+        "icon": "$(sync)"
       }
     ],
     "configuration": {
       "title": "AI Documentation Generator",
       "properties": {
-        "docGenerator.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable/disable the AI documentation generator"
-        },
-        "docGenerator.autoUpdate": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically update documentation on Git commits and file changes"
-        },
-        "docGenerator.outputDirectory": {
+        "ai-doc-generator.apiToken": {
           "type": "string",
-          "default": "./docs",
-          "description": "Directory to output generated documentation"
+          "description": "DeepSeek R1T2 Chimera API Token",
+          "scope": "application"
         },
-        "docGenerator.excludePatterns": {
+        "ai-doc-generator.autoUpdateOnCommit": {
+          "type": "boolean",
+          "default": false,
+          "description": "Auto-update documentation after git commits (optional)"
+        },
+        "ai-doc-generator.excludePatterns": {
           "type": "array",
           "default": [
             "node_modules/**",
@@ -81,28 +76,6 @@
             "**/*.d.ts"
           ],
           "description": "File patterns to exclude from documentation analysis"
-        },
-        "docGenerator.ai.defaultModel": {
-          "type": "string",
-          "default": "tngtech/deepseek-r1t2-chimera:free",
-          "enum": [
-            "tngtech/deepseek-r1t2-chimera:free"
-          ],
-          "description": "DeepSeek R1T2 Chimera - Superior AI model for professional documentation generation"
-        },
-        "docGenerator.ai.maxTokens": {
-          "type": "number",
-          "default": 8192,
-          "minimum": 2000,
-          "maximum": 8192,
-          "description": "Maximum tokens per DeepSeek R1T2 Chimera request (optimized for comprehensive documentation)"
-        },
-        "docGenerator.ai.temperature": {
-          "type": "number",
-          "default": 0.1,
-          "minimum": 0,
-          "maximum": 1.0,
-          "description": "AI consistency level (0.1 = highly consistent documentation, 1.0 = more creative)"
         }
       }
     },
@@ -111,22 +84,21 @@
         {
           "id": "aiDocGeneratorView",
           "name": "AI Documentation",
-          "when": "docGenerator.enabled"
+          "when": "true"
         }
       ]
     },
     "menus": {
       "commandPalette": [
         {
-          "command": "docGenerator.generateProjectDocs",
+          "command": "ai-doc-generator.generate",
           "when": "workspaceFolderCount != 0"
         },
         {
-          "command": "docGenerator.updateDocs",
-          "when": "workspaceFolderCount != 0"
+          "command": "ai-doc-generator.configure"
         },
         {
-          "command": "docGenerator.configureAI"
+          "command": "ai-doc-generator.toggleAutoUpdate"
         }
       ]
     }
@@ -138,7 +110,14 @@
     "package": "vsce package",
     "test": "npm run compile && node ./out/test/runTest.js",
     "lint": "eslint src --ext ts",
-    "lint:fix": "eslint src --ext ts --fix"
+    "lint:fix": "eslint src --ext ts --fix",
+    "release:patch": "npm version patch && npm run compile && npm run package && git add . && git commit -m \"Release v$(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
+    "release:minor": "npm version minor && npm run compile && npm run package && git add . && git commit -m \"Release v$(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
+    "release:major": "npm version major && npm run compile && npm run package && git add . && git commit -m \"Release v$(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
+    "release:custom": "npm run compile && npm run package",
+    "clean": "rm -rf out dist *.vsix",
+    "build:clean": "npm run clean && npm run compile",
+    "package:clean": "npm run clean && npm run compile && npm run package"
   },
   "devDependencies": {
     "@types/dotenv": "^6.1.1",

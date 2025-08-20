@@ -2,8 +2,11 @@ import * as vscode from 'vscode';
 import { aiService } from '../services/aiService';
 import { CodeAnalyzer } from '../analyzers/codeAnalyzer';
 import { AIEnhancedReadmeGenerator } from '../generators/aiEnhancedReadmeGenerator';
-import { environmentManager } from '../utils/environmentManager';
+
 import { FirstTimeSetup } from '../utils/firstTimeSetup';
+import { DocumentationGenerator } from '../services/documentationGenerator';
+import { DeepSeekClient } from '../services/deepSeekClient';
+import { SettingsManager } from '../utils/settingsManager';
 
 export class AICommands {
     private codeAnalyzer: CodeAnalyzer;
@@ -11,171 +14,112 @@ export class AICommands {
     private context: vscode.ExtensionContext;
     private statusChangeEmitter = new vscode.EventEmitter<string>();
     public readonly onStatusChange = this.statusChangeEmitter.event;
+    private documentationGenerator: DocumentationGenerator;
+    private deepSeekClient: DeepSeekClient;
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
         this.codeAnalyzer = new CodeAnalyzer();
         this.readmeGenerator = new AIEnhancedReadmeGenerator();
+        this.documentationGenerator = new DocumentationGenerator();
+        this.deepSeekClient = new DeepSeekClient();
     }
 
-    /**
-     * Generate comprehensive project documentation with AI
-     * Combines full project analysis, README generation, and API documentation
+        /**
+     * Function 2: Generate Project Documentation using DeepSeek R1T2 Chimera
+     * Creates both README.md (user-friendly) and PROJECT_OVERVIEW.md (technical)
      */
     public async generateProjectDocumentation(): Promise<void> {
-        // Ensure setup is complete before proceeding
-        if (!(await FirstTimeSetup.ensureSetup(this.context))) {
-            return;
-        }
-
-        if (!(await this.checkAIConfiguration())) {
-            return;
-        }
-
         try {
             this.statusChangeEmitter.fire('Generating...');
             
-            await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "🤖 Generating comprehensive project documentation...",
-                cancellable: false
-            }, async (progress) => {
-                progress.report({ increment: 0, message: "Initializing AI documentation generator..." });
-
-                const workspaceFolders = vscode.workspace.workspaceFolders;
-                if (!workspaceFolders || workspaceFolders.length === 0) {
-                    throw new Error('No workspace folder found');
-                }
-
-                const rootPath = workspaceFolders[0].uri.fsPath;
-                
-                progress.report({ increment: 15, message: "Analyzing entire project structure..." });
-                const config = vscode.workspace.getConfiguration('docGenerator');
-                const excludePatterns = config.get<string[]>('excludePatterns') || [];
-
-                const analysisResult = await this.codeAnalyzer.analyzeProject(rootPath, [], excludePatterns);
-
-                progress.report({ increment: 40, message: "Generating README with AI..." });
-                const readme = await this.readmeGenerator.generate(analysisResult);
-
-                progress.report({ increment: 65, message: "Creating comprehensive project overview..." });
-                const overview = await this.readmeGenerator.generateComprehensiveOverview(analysisResult);
-
-                progress.report({ increment: 85, message: "Saving documentation files..." });
-                await Promise.all([
-                    this.saveDocumentation(readme, 'README.md'),
-                    this.saveDocumentation(overview, 'PROJECT_OVERVIEW.md')
-                ]);
-
-                progress.report({ increment: 100, message: "Complete!" });
-            });
+            // Use the new DocumentationGenerator with DeepSeek integration
+            await this.documentationGenerator.generateAllDocumentation();
 
             this.statusChangeEmitter.fire('Ready');
             
             const choice = await vscode.window.showInformationMessage(
-                '🎉 AI-powered project documentation generated successfully!\n\n📄 Created: README.md + PROJECT_OVERVIEW.md',
+                '🎉 Documentation generated successfully with DeepSeek R1T2 Chimera!\n\n📄 Created: README.md (user-friendly) + PROJECT_OVERVIEW.md (technical)',
                 'View README',
-                'View Overview',
-                'Open Docs Folder'
+                'View Technical Overview',
+                'Test AI Connection'
             );
 
             switch (choice) {
                 case 'View README':
                     await this.openDocument('README.md');
                     break;
-                case 'View Overview':
+                case 'View Technical Overview':
                     await this.openDocument('PROJECT_OVERVIEW.md');
                     break;
-                case 'Open Docs Folder':
-                    await this.openDocsFolder();
+                case 'Test AI Connection':
+                    await this.testAIConnection();
                     break;
             }
 
         } catch (error) {
             this.statusChangeEmitter.fire('Error');
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            vscode.window.showErrorMessage(`Failed to generate AI documentation: ${errorMessage}`);
+            
+            if (errorMessage.includes('API token not configured')) {
+                const choice = await vscode.window.showErrorMessage(
+                    'DeepSeek API token not configured. Would you like to configure it now?',
+                    'Configure API Token',
+                    'Learn More'
+                );
+                
+                if (choice === 'Configure API Token') {
+                    await this.configureAI();
+                } else if (choice === 'Learn More') {
+                    vscode.env.openExternal(vscode.Uri.parse('https://openrouter.ai/keys'));
+                }
+            } else {
+                vscode.window.showErrorMessage(`Failed to generate documentation: ${errorMessage}`);
+            }
         }
     }
 
-    /**
-     * Update existing documentation with AI based on recent changes
+        /**
+     * Function 3: Manual Update Documentation using DeepSeek R1T2 Chimera
+     * Updates both README.md and PROJECT_OVERVIEW.md based on current codebase state
      */
     public async updateDocumentation(): Promise<void> {
-        // Ensure setup is complete before proceeding
-        if (!(await FirstTimeSetup.ensureSetup(this.context))) {
-            return;
-        }
-
-        if (!(await this.checkAIConfiguration())) {
-            return;
-        }
-
         try {
             this.statusChangeEmitter.fire('Updating...');
             
-            await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "🔄 Updating documentation with AI...",
-                cancellable: false
-            }, async (progress) => {
-                progress.report({ increment: 0, message: "Analyzing recent changes..." });
-
-                const workspaceFolders = vscode.workspace.workspaceFolders;
-                if (!workspaceFolders || workspaceFolders.length === 0) {
-                    throw new Error('No workspace folder found');
-                }
-
-                const rootPath = workspaceFolders[0].uri.fsPath;
-                
-                // Check if documentation exists
-                const hasReadme = await this.documentExists('README.md');
-                if (!hasReadme) {
-                    const generateFirst = await vscode.window.showInformationMessage(
-                        'No documentation found. Generate it first?',
-                        'Generate Documentation',
-                        'Cancel'
-                    );
-                    
-                    if (generateFirst === 'Generate Documentation') {
-                        return this.generateProjectDocumentation();
-                    }
-                    return;
-                }
-
-                progress.report({ increment: 25, message: "Re-analyzing project structure..." });
-                const config = vscode.workspace.getConfiguration('docGenerator');
-                const excludePatterns = config.get<string[]>('excludePatterns') || [];
-                
-                const analysisResult = await this.codeAnalyzer.analyzeProject(rootPath, [], excludePatterns);
-
-                progress.report({ increment: 60, message: "Enhancing existing documentation with AI..." });
-                
-                // Update README with current state
-                const existingReadme = await this.getExistingContent('README.md');
-                const updatedReadme = await this.readmeGenerator.enhanceWithAI(analysisResult, existingReadme);
-
-                progress.report({ increment: 85, message: "Saving updated documentation..." });
-                await this.saveDocumentation(updatedReadme, 'README.md');
-
-                progress.report({ increment: 100, message: "Update complete!" });
-            });
+            // Use the new DocumentationGenerator with DeepSeek integration
+            await this.documentationGenerator.generateAllDocumentation();
 
             this.statusChangeEmitter.fire('Ready');
-
+            
             vscode.window.showInformationMessage(
-                '✅ Documentation updated successfully with latest changes!',
-                'View README'
+                '✅ Documentation updated successfully with DeepSeek R1T2 Chimera!',
+                'View README',
+                'View Technical Overview'
             ).then((selection) => {
                 if (selection === 'View README') {
                     this.openDocument('README.md');
+                } else if (selection === 'View Technical Overview') {
+                    this.openDocument('PROJECT_OVERVIEW.md');
                 }
             });
 
         } catch (error) {
             this.statusChangeEmitter.fire('Error');
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            vscode.window.showErrorMessage(`Failed to update documentation: ${errorMessage}`);
+            
+            if (errorMessage.includes('API token not configured')) {
+                const choice = await vscode.window.showErrorMessage(
+                    'DeepSeek API token not configured. Would you like to configure it now?',
+                    'Configure API Token'
+                );
+                
+                if (choice === 'Configure API Token') {
+                    await this.configureAI();
+                }
+            } else {
+                vscode.window.showErrorMessage(`Failed to update documentation: ${errorMessage}`);
+            }
         }
     }
 
@@ -189,7 +133,7 @@ export class AICommands {
         }
 
         // Debounced update - only update if AI is configured
-        if (await this.isAIConfigured()) {
+        if (SettingsManager.isApiTokenConfigured()) {
             console.log(`File changed: ${filePath} - scheduling documentation update`);
             this.statusChangeEmitter.fire('Auto-updating...');
             
@@ -230,7 +174,7 @@ export class AICommands {
                     panel.dispose();
                     break;
                 case 'testConnection':
-                    await this.testAIConnection(message.settings);
+                    await this.testAIConnection();
                     break;
                 case 'getModels':
                     const models = aiService.getAvailableModels();
@@ -247,17 +191,20 @@ export class AICommands {
 
 
 
+    /**
+     * Function 1: Check if DeepSeek API token is configured (persistent storage)
+     */
     private async checkAIConfiguration(): Promise<boolean> {
-        const isConfigured = await aiService.isConfigured();
+        const isConfigured = SettingsManager.isApiTokenConfigured();
         if (!isConfigured) {
             vscode.window.showWarningMessage(
-                'AI service is not configured. Please set your OpenRouter API key in system environment variables.',
-                'Configure AI', 'Learn More'
+                'DeepSeek R1T2 Chimera API token not configured. Please configure it to generate documentation.',
+                'Configure API Token', 'Get Free API Key'
             ).then((selection) => {
-                if (selection === 'Configure AI') {
+                if (selection === 'Configure API Token') {
                     this.configureAI();
-                } else if (selection === 'Learn More') {
-                    vscode.env.openExternal(vscode.Uri.parse('https://github.com/voznyye/AutoDoc#secure-setup'));
+                } else if (selection === 'Get Free API Key') {
+                    vscode.env.openExternal(vscode.Uri.parse('https://openrouter.ai/keys'));
                 }
             });
             return false;
@@ -265,63 +212,41 @@ export class AICommands {
         return true;
     }
 
-    private async isAIConfigured(): Promise<boolean> {
-        return await aiService.isConfigured();
-    }
-
-    private async documentExists(filename: string): Promise<boolean> {
+    /**
+     * Test DeepSeek API connection
+     */
+    private async testAIConnection(): Promise<void> {
         try {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders || workspaceFolders.length === 0) {
-                return false;
-            }
+            const isConnected = await this.deepSeekClient.testConnection();
             
-            const filePath = vscode.Uri.joinPath(workspaceFolders[0].uri, filename);
-            await vscode.workspace.fs.stat(filePath);
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    private async getExistingContent(filename: string): Promise<string> {
-        try {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders || workspaceFolders.length === 0) {
-                return '';
-            }
-            
-            const filePath = vscode.Uri.joinPath(workspaceFolders[0].uri, filename);
-            const content = await vscode.workspace.fs.readFile(filePath);
-            return new TextDecoder().decode(content);
-        } catch {
-            return '';
-        }
-    }
-
-    private async openDocsFolder(): Promise<void> {
-        try {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders || workspaceFolders.length === 0) {
-                return;
-            }
-            
-            const config = vscode.workspace.getConfiguration('docGenerator');
-            const outputDir = config.get<string>('outputDirectory') || './docs';
-            const docsPath = vscode.Uri.joinPath(workspaceFolders[0].uri, outputDir);
-            
-            // Try to open the docs folder, create it if it doesn't exist
-            try {
-                await vscode.workspace.fs.stat(docsPath);
-                vscode.commands.executeCommand('revealFileInOS', docsPath);
-            } catch {
-                // Docs folder doesn't exist, just open workspace root
-                vscode.commands.executeCommand('revealFileInOS', workspaceFolders[0].uri);
+            if (isConnected) {
+                vscode.window.showInformationMessage(
+                    '✅ DeepSeek R1T2 Chimera connection successful! Ready to generate documentation.'
+                );
+            } else {
+                vscode.window.showErrorMessage(
+                    '❌ Failed to connect to DeepSeek R1T2 Chimera. Please check your API token.',
+                    'Configure API Token'
+                ).then((selection) => {
+                    if (selection === 'Configure API Token') {
+                        this.configureAI();
+                    }
+                });
             }
         } catch (error) {
-            console.error('Failed to open docs folder:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            vscode.window.showErrorMessage(
+                `❌ DeepSeek connection test failed: ${errorMessage}`,
+                'Configure API Token'
+            ).then((selection) => {
+                if (selection === 'Configure API Token') {
+                    this.configureAI();
+                }
+            });
         }
     }
+
+
 
 
 
@@ -439,12 +364,12 @@ export class AICommands {
         </div>
     </div>
 
-    <div class="setting-group">
-        <label for="apiKey">OpenRouter API Key:</label>
-        <input type="password" id="apiKey" placeholder="sk-or-..." />
-        <small>🔐 <strong>Secure Storage:</strong> Keys are stored in system environment variables only<br/>
-        Get your free API key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></small>
-    </div>
+            <div class="setting-group">
+            <label for="apiToken">DeepSeek R1T2 Chimera API Token:</label>
+            <input type="password" id="apiToken" placeholder="sk-..." />
+            <small>🔐 <strong>Persistent Storage:</strong> Token survives IDE restarts<br/>
+            Get your free API key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></small>
+        </div>
 
     <div class="setting-group">
         <label for="defaultModel">Default AI Model:</label>
@@ -454,19 +379,12 @@ export class AICommands {
         <div id="modelInfo" class="model-info" style="display: none;"></div>
     </div>
 
-    <div class="setting-group">
-        <div class="checkbox-group">
-            <input type="checkbox" id="enhanceExisting" />
-            <label for="enhanceExisting">Enhance existing documentation instead of replacing</label>
+            <div class="setting-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="autoUpdateOnCommit" />
+                <label for="autoUpdateOnCommit">Auto-update documentation after git commits</label>
+            </div>
         </div>
-    </div>
-
-    <div class="setting-group">
-        <div class="checkbox-group">
-            <input type="checkbox" id="includeExamples" />
-            <label for="includeExamples">Include code examples in generated documentation</label>
-        </div>
-    </div>
 
     <div class="setting-group">
         <label for="maxTokens">Max Tokens (100-8000):</label>
@@ -480,11 +398,11 @@ export class AICommands {
         <span id="temperatureValue">0.7</span>
     </div>
 
-    <div>
-        <button onclick="testConnection()">🔧 Test Connection</button>
-        <button onclick="saveSettings()">💾 Save API Key to System</button>
-        <button onclick="resetSettings()">🔄 Reset to Defaults</button>
-    </div>
+            <div>
+            <button onclick="testConnection()">🔧 Test DeepSeek Connection</button>
+            <button onclick="saveSettings()">💾 Save Settings (Persistent)</button>
+            <button onclick="resetSettings()">🔄 Reset to Defaults</button>
+        </div>
 
     <div id="testResult"></div>
 
@@ -527,16 +445,15 @@ export class AICommands {
 
         function loadSettings(settings) {
             document.getElementById('aiEnabled').checked = settings.enabled || false;
-            document.getElementById('apiKey').value = settings.openRouterApiKey || '';
+            document.getElementById('apiToken').value = settings.apiToken || '';
             document.getElementById('defaultModel').value = settings.defaultModel || '';
-            document.getElementById('enhanceExisting').checked = settings.enhanceExisting !== false;
-            document.getElementById('includeExamples').checked = settings.includeExamples !== false;
+            document.getElementById('autoUpdateOnCommit').checked = settings.autoUpdateOnCommit !== false;
             
-            const maxTokens = settings.maxTokens || 4000;
+            const maxTokens = settings.maxTokens || 8192;
             document.getElementById('maxTokens').value = maxTokens;
             document.getElementById('maxTokensValue').textContent = maxTokens;
             
-            const temperature = settings.temperature || 0.7;
+            const temperature = settings.temperature || 0.1;
             document.getElementById('temperature').value = temperature;
             document.getElementById('temperatureValue').textContent = temperature;
             
@@ -576,10 +493,9 @@ export class AICommands {
         function saveSettings() {
             const settings = {
                 enabled: document.getElementById('aiEnabled').checked,
-                openRouterApiKey: document.getElementById('apiKey').value,
+                apiToken: document.getElementById('apiToken').value,
                 defaultModel: document.getElementById('defaultModel').value,
-                enhanceExisting: document.getElementById('enhanceExisting').checked,
-                includeExamples: document.getElementById('includeExamples').checked,
+                autoUpdateOnCommit: document.getElementById('autoUpdateOnCommit').checked,
                 maxTokens: parseInt(document.getElementById('maxTokens').value),
                 temperature: parseFloat(document.getElementById('temperature').value)
             };
@@ -589,28 +505,27 @@ export class AICommands {
 
         function testConnection() {
             const settings = {
-                openRouterApiKey: document.getElementById('apiKey').value,
+                apiToken: document.getElementById('apiToken').value,
                 defaultModel: document.getElementById('defaultModel').value
             };
             
             vscode.postMessage({ command: 'testConnection', settings });
             
-            document.getElementById('testResult').innerHTML = '<div style="color: orange;">Testing connection...</div>';
+            document.getElementById('testResult').innerHTML = '<div style="color: orange;">Testing DeepSeek R1T2 Chimera connection...</div>';
         }
 
 
 
         function resetSettings() {
-            if (confirm('Reset all AI settings to defaults?')) {
-                document.getElementById('aiEnabled').checked = false;
-                document.getElementById('apiKey').value = '';
-                document.getElementById('defaultModel').value = 'qwen/qwen-2-7b-instruct:free';
-                document.getElementById('enhanceExisting').checked = true;
-                document.getElementById('includeExamples').checked = true;
-                document.getElementById('maxTokens').value = 4000;
-                document.getElementById('maxTokensValue').textContent = '4000';
-                document.getElementById('temperature').value = 0.7;
-                document.getElementById('temperatureValue').textContent = '0.7';
+            if (confirm('Reset all DeepSeek settings to defaults?')) {
+                document.getElementById('aiEnabled').checked = true;
+                document.getElementById('apiToken').value = '';
+                document.getElementById('defaultModel').value = 'tngtech/deepseek-r1t2-chimera:free';
+                document.getElementById('autoUpdateOnCommit').checked = true;
+                document.getElementById('maxTokens').value = 8192;
+                document.getElementById('maxTokensValue').textContent = '8192';
+                document.getElementById('temperature').value = 0.1;
+                document.getElementById('temperatureValue').textContent = '0.1';
                 updateModelInfo();
             }
         }
@@ -625,107 +540,40 @@ export class AICommands {
     }
 
     private getCurrentAISettings(): any {
-        const config = vscode.workspace.getConfiguration('docGenerator.ai');
+        const aiConfig = SettingsManager.getAIConfig();
         return {
-            enabled: config.get('enabled'),
-            openRouterApiKey: config.get('openRouterApiKey'),
-            defaultModel: config.get('defaultModel'),
-            enhanceExisting: config.get('enhanceExisting'),
-            includeExamples: config.get('includeExamples'),
-            maxTokens: config.get('maxTokens'),
-            temperature: config.get('temperature')
+            enabled: true,
+            apiToken: SettingsManager.getApiToken() || '',
+            defaultModel: aiConfig.model,
+            maxTokens: aiConfig.maxTokens,
+            temperature: aiConfig.temperature,
+            autoUpdateOnCommit: SettingsManager.getAutoUpdateOnCommit()
         };
     }
 
     private async saveAISettings(settings: any): Promise<void> {
-        const config = vscode.workspace.getConfiguration('docGenerator.ai');
-        
-        // Save API key to system environment variable if provided
-        if (settings.openRouterApiKey && settings.openRouterApiKey.trim()) {
-            await this.saveApiKeyToSystem(settings.openRouterApiKey.trim());
-        }
-        
-        // Save non-sensitive settings to VSCode configuration
-        await Promise.all([
-            config.update('enabled', settings.enabled, vscode.ConfigurationTarget.Workspace),
-            // Don't save API key to VSCode settings for security
-            config.update('defaultModel', settings.defaultModel, vscode.ConfigurationTarget.Workspace),
-            config.update('enhanceExisting', settings.enhanceExisting, vscode.ConfigurationTarget.Workspace),
-            config.update('includeExamples', settings.includeExamples, vscode.ConfigurationTarget.Workspace),
-            config.update('maxTokens', settings.maxTokens, vscode.ConfigurationTarget.Workspace),
-            config.update('temperature', settings.temperature, vscode.ConfigurationTarget.Workspace)
-        ]);
-
-        // Reload environment manager configuration
-        await environmentManager.reload();
-    }
-
-    private async saveApiKeyToSystem(apiKey: string): Promise<void> {
         try {
-            await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: 'Saving API key to system environment...',
-                cancellable: false
-            }, async (progress) => {
-                progress.report({ increment: 0, message: 'Setting system environment variable...' });
-                
-                await environmentManager.setSystemEnvironmentVariable('OPENROUTER_API_KEY', apiKey);
-                
-                progress.report({ increment: 100, message: 'Done!' });
-            });
-
-            const platform = process.platform;
-            const restartMessage = platform === 'win32' 
-                ? 'API key saved to system environment! Please restart VSCode/Cursor for changes to take effect.'
-                : 'API key saved to system environment! Please restart VSCode/Cursor or reload your shell.';
-
-            vscode.window.showInformationMessage(
-                `✅ ${restartMessage}`,
-                'Restart Now'
-            ).then((selection) => {
-                if (selection === 'Restart Now') {
-                    vscode.commands.executeCommand('workbench.action.reloadWindow');
-                }
-            });
+            // Save API token with persistent storage that survives IDE restarts
+            if (settings.apiToken && settings.apiToken.trim()) {
+                await SettingsManager.saveApiToken(settings.apiToken.trim());
+            }
             
+            // Save other AI configuration settings
+            const config = vscode.workspace.getConfiguration('docGenerator');
+            await Promise.all([
+                config.update('ai.defaultModel', settings.defaultModel, vscode.ConfigurationTarget.Global),
+                config.update('ai.maxTokens', settings.maxTokens, vscode.ConfigurationTarget.Global),
+                config.update('ai.temperature', settings.temperature, vscode.ConfigurationTarget.Global),
+                config.update('autoUpdateOnCommit', settings.autoUpdateOnCommit, vscode.ConfigurationTarget.Global)
+            ]);
+
+            console.log('✅ DeepSeek API settings saved with persistent storage');
         } catch (error) {
-            throw new Error(`Failed to save API key to system environment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            throw new Error(`Failed to save API settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
-    private async testAIConnection(settings: any): Promise<void> {
-        // Temporarily use the provided settings for testing
-        const originalApiKey = process.env.OPENROUTER_API_KEY;
-        
-        try {
-            // Set temporary API key
-            if (settings.openRouterApiKey) {
-                process.env.OPENROUTER_API_KEY = settings.openRouterApiKey;
-                await environmentManager.reload();
-            }
 
-            const isConnected = await aiService.testConnection(settings.defaultModel);
-            
-            const message = isConnected 
-                ? '✅ Connection successful! AI features are ready to use.'
-                : '❌ Connection failed. Please check your API key and try again.';
-                
-            // Here you would send the result back to the webview
-            // This is a simplified version
-            vscode.window.showInformationMessage(message);
-            
-        } catch (error) {
-            vscode.window.showErrorMessage(`Connection test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        } finally {
-            // Restore original API key
-            if (originalApiKey) {
-                process.env.OPENROUTER_API_KEY = originalApiKey;
-            } else {
-                delete process.env.OPENROUTER_API_KEY;
-            }
-            await environmentManager.reload();
-        }
-    }
 
     /**
      * Generate comprehensive project overview
@@ -798,3 +646,4 @@ export class AICommands {
         }
     }
 }
+
