@@ -1,10 +1,8 @@
 import * as vscode from 'vscode';
-import { DocumentationProvider } from './providers/documentationProvider';
 import { GitHookProvider } from './providers/gitHookProvider';
 import { AICommands } from './commands/aiCommands';
 import { FirstTimeSetup } from './utils/firstTimeSetup';
 
-let documentationProvider: DocumentationProvider;
 let gitHookProvider: GitHookProvider;
 let aiCommands: AICommands;
 
@@ -12,7 +10,6 @@ export function activate(context: vscode.ExtensionContext) {
     console.log('🤖 AI Documentation Generator extension is now active!');
 
     // Initialize providers
-    documentationProvider = new DocumentationProvider(context);
     gitHookProvider = new GitHookProvider(context);
     aiCommands = new AICommands(context);
 
@@ -78,8 +75,6 @@ export function deactivate() {
 
 
 function setupFileWatchers(context: vscode.ExtensionContext) {
-    const config = vscode.workspace.getConfiguration('docGenerator');
-    
     // Watch for changes in common source code file types
     const patterns = [
         '**/*.{ts,tsx,js,jsx}', // TypeScript and JavaScript

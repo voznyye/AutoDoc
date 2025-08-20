@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { GitUtils } from '../utils/gitUtils';
-import { DocumentationProvider } from './documentationProvider';
 
 export interface GitHookConfig {
     preCommit: {
@@ -28,17 +27,10 @@ export interface CommitAnalysis {
 }
 
 export class GitHookProvider {
-    // private context: vscode.ExtensionContext;
     private gitUtils: GitUtils;
-    private documentationProvider?: DocumentationProvider;
 
     constructor(_context: vscode.ExtensionContext) {
-        // this.context = context;
         this.gitUtils = new GitUtils();
-    }
-
-    public setDocumentationProvider(provider: DocumentationProvider): void {
-        this.documentationProvider = provider;
     }
 
     public async setupHooks(): Promise<void> {
@@ -270,19 +262,13 @@ fi
                 // Remove the marker file
                 fs.unlinkSync(updateRequestFile);
                 
-                // Trigger documentation update
-                if (this.documentationProvider) {
-                    const analysis = await this.analyzeCommit(workspaceRoot);
-                    
-                    // Show notification about documentation update
-                    vscode.window.showInformationMessage(
-                        `Updating documentation for ${analysis.changedFiles.length} changed files...`
-                    );
-                    
-                    // This would trigger the documentation update
-                    // For now, we'll just log it
-                    console.log('Documentation update would be triggered here');
-                }
+                // Trigger AI documentation update via command
+                vscode.window.showInformationMessage(
+                    'Code changes detected. Updating documentation with AI...'
+                );
+                
+                // Trigger the AI update command
+                vscode.commands.executeCommand('docGenerator.updateDocs');
             }
 
             return true; // Allow commit to proceed

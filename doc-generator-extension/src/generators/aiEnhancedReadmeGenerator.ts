@@ -1,5 +1,5 @@
 import { AnalysisResult } from '../analyzers/codeAnalyzer';
-import { ChangesSinceLastUpdate } from '../providers/documentationProvider';
+import { ChangesSinceLastUpdate } from '../types/documentation';
 import { ReadmeGenerator } from './readmeGenerator';
 import { aiService, DocumentationRequest } from '../services/aiService';
 import * as vscode from 'vscode';

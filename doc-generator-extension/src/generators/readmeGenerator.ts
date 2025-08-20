@@ -1,7 +1,7 @@
 // import * as fs from 'fs';
 // import * as path from 'path';
 import { AnalysisResult, CodeElement } from '../analyzers/codeAnalyzer';
-import { ChangesSinceLastUpdate } from '../providers/documentationProvider';
+import { ChangesSinceLastUpdate } from '../types/documentation';
 
 export class ReadmeGenerator {
     
