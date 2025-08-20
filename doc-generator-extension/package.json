@@ -2,7 +2,7 @@
   "name": "ai-documentation-generator",
   "displayName": "AI Documentation Generator",
   "description": "AI-powered VS Code/Cursor extension that automatically generates and maintains comprehensive project documentation using DeepSeek R1T2 Chimera AI model",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "publisher": "voznyye",
   "engines": {
     "vscode": "^1.80.0"
@@ -115,6 +115,14 @@
     "release:minor": "npm version minor && npm run compile && npm run package && git add . && git commit -m \"Release v$(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
     "release:major": "npm version major && npm run compile && npm run package && git add . && git commit -m \"Release v$(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
     "release:custom": "npm run compile && npm run package",
+    "publish": "vsce publish",
+    "publish:patch": "npm run release:patch && vsce publish",
+    "publish:minor": "npm run release:minor && vsce publish",
+    "publish:major": "npm run release:major && vsce publish",
+    "publish:custom": "npm run release:custom && vsce publish",
+    "login": "vsce login voznyye",
+    "logout": "vsce logout voznyye",
+    "verify": "vsce verify-pat voznyye",
     "clean": "rm -rf out dist *.vsix",
     "build:clean": "npm run clean && npm run compile",
     "package:clean": "npm run clean && npm run compile && npm run package"
