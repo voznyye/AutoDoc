@@ -1,10 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <rect width="128" height="128" fill="#007ACC" rx="8"/>
-  <text x="64" y="45" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">DOC</text>
-  <text x="64" y="75" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16">GEN</text>
-  <circle cx="20" cy="20" r="8" fill="white" opacity="0.8"/>
-  <circle cx="108" cy="20" r="8" fill="white" opacity="0.8"/>
-  <circle cx="20" cy="108" r="8" fill="white" opacity="0.8"/>
-  <circle cx="108" cy="108" r="8" fill="white" opacity="0.8"/>
+  <!-- iOS-style rounded rectangle background with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357ABD;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="docGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F8F9FA;stop-opacity:1" />
+    </linearGradient>
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Main background with iOS-style rounded corners -->
+  <rect width="128" height="128" fill="url(#bgGradient)" rx="22" ry="22"/>
+  
+  <!-- Document base -->
+  <rect x="32" y="28" width="52" height="68" fill="url(#docGradient)" rx="4" ry="4" filter="url(#shadow)"/>
+  
+  <!-- Document fold corner -->
+  <path d="M76 28 L84 36 L76 36 Z" fill="#E9ECEF"/>
+  
+  <!-- Document lines representing text -->
+  <rect x="38" y="42" width="32" height="2" fill="#6C757D" rx="1"/>
+  <rect x="38" y="48" width="28" height="2" fill="#6C757D" rx="1"/>
+  <rect x="38" y="54" width="30" height="2" fill="#6C757D" rx="1"/>
+  <rect x="38" y="60" width="24" height="2" fill="#6C757D" rx="1"/>
+  
+  <!-- AI/Robot element - minimalistic brain/circuit pattern -->
+  <circle cx="96" cy="80" r="18" fill="#FF6B6B" opacity="0.95"/>
+  
+  <!-- AI brain synapses/connections -->
+  <circle cx="90" cy="74" r="2" fill="white"/>
+  <circle cx="102" cy="74" r="2" fill="white"/>
+  <circle cx="96" cy="86" r="2" fill="white"/>
+  <circle cx="88" cy="86" r="1.5" fill="white"/>
+  <circle cx="104" cy="86" r="1.5" fill="white"/>
+  
+  <!-- Connection lines -->
+  <path d="M90 74 L96 80 M102 74 L96 80 M96 80 L88 86 M96 80 L104 86" 
+        stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
+  
+  <!-- Subtle highlight for iOS-style depth -->
+  <rect x="0" y="0" width="128" height="64" fill="url(#highlight)" rx="22" ry="22"/>
+  
+  <defs>
+    <linearGradient id="highlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.2" />
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0" />
+    </linearGradient>
+  </defs>
 </svg>

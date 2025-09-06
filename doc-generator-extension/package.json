@@ -2,7 +2,7 @@
   "name": "ai-documentation-generator",
   "displayName": "AutoDoc - AI Documentation Generator",
   "description": "AI-powered VS Code/Cursor extension that automatically generates and maintains comprehensive project documentation using DeepSeek R1T2 Chimera AI model",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "publisher": "voznyye",
   "engines": {
     "vscode": "^1.80.0"
@@ -149,6 +149,7 @@
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
     "prettier": "^3.0.0",
+    "sharp": "^0.34.3",
     "ts-loader": "^9.0.0",
     "typescript": "^5.0.0",
     "webpack": "^5.0.0",
