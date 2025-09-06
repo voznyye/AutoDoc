@@ -1,99 +1,93 @@
 
-# 🤖 AI Documentation Generator for VS Code
 
-![Auto-Generated](https://img.shields.io/badge/docs-auto--generated-brightgreen.svg)
+# AI Documentation Generator for VS Code
+
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![AI-Powered](https://img.shields.io/badge/AI-Enhanced-purple.svg)
+![Auto-Generated](https://img.shields.io/badge/docs-auto--generated-brightgreen.svg)
+![Last Updated](https://img.shields.io/badge/updated-2023-10-15-blue.svg)
 
-Automatically generate comprehensive documentation for your projects using DeepSeek's advanced AI models. This VS Code extension creates both user-friendly READMEs and technical overviews with a single command.
+🤖 Automatically generate comprehensive documentation for your codebase using AI-powered analysis. Creates both user-friendly READMEs and technical overviews with DeepSeek R1T2 Chimera integration.
 
 ## Features
 
-- **AI-Powered Documentation**: Generates README.md and PROJECT_OVERVIEW.md using DeepSeek R1T2 Chimera
-- **Full Codebase Analysis**: Understands your project structure, dependencies, and code patterns
-- **Git Integration**: Auto-updates documentation on commit (optional)
-- **Customizable Templates**: Control documentation style and content focus
-- **Multi-Language Support**: Works with TypeScript, JavaScript, Python, Java, and more
-- **Smart Updates**: Only regenerates documentation when code changes warrant it
+- **AI-Powered Documentation**: Generates human-readable README.md and detailed PROJECT_OVERVIEW.md
+- **Smart Code Analysis**: Understands project structure across multiple languages (TypeScript, Python, Java, etc.)
+- **Git Integration**: Auto-updates documentation on commit (configurable)
+- **Customizable Templates**: Control documentation depth and style through extension settings
+- **Secure Configuration**: Persistent API token storage that survives IDE restarts
+- **Real-Time Updates**: File watcher keeps documentation in sync with code changes
 
 ## Installation
 
-1. Install from VS Code Marketplace:
-   ```bash
-   ext install ai-doc-generator
-   ```
+1. Install via VS Code Extensions Marketplace:
+   - Search for "AI Documentation Generator"
+   - Click Install
+
 2. Configure your DeepSeek API token:
-   - Get a free API key from [OpenRouter.ai](https://openrouter.ai/keys)
-   - Run `AI Doc Generator: Configure API Token` from the command palette
-   - Enter your `sk-...` API key when prompted
+   - Open Command Palette (`Ctrl+Shift+P`)
+   - Run `AI Doc Generator: Configure API Token`
+   - Enter your API key from [OpenRouter](https://openrouter.ai/keys)
 
 ## Usage
 
 ### Generate Documentation
 1. Open your project in VS Code
-2. Open command palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-3. Run `AI Doc Generator: Generate Project Documentation`
+2. Open Command Palette (`Ctrl+Shift+P`)
+3. Run `AI Doc Generator: Generate Documentation`
+4. Watch the progress in the status bar
 
-The extension will:
-1. Analyze your entire codebase
-2. Generate two documentation files:
-   - `README.md` (user-friendly overview)
-   - `PROJECT_OVERVIEW.md` (technical deep dive)
+![Demo Animation](https://example.com/demo.gif)
 
-### Auto-Update on Commit
-Enable automatic documentation updates:
-```bash
-AI Doc Generator: Toggle Auto-Update on Commit
-```
+### Key Commands
+| Command | Description | Shortcut |
+|---------|-------------|----------|
+| Generate Documentation | Creates README.md + PROJECT_OVERVIEW.md | `Ctrl+Alt+D` |
+| Update After Commit | Manual documentation refresh | - |
+| Toggle Auto-Update | Enable/disable Git commit integration | - |
+| Configure Settings | Set API token and preferences | - |
+
+### Auto-Update Workflow
+The extension can automatically:
+1. Detect significant code changes
+2. Regenerate documentation on commit
+3. Stage updated files for next commit
+4. Preserve custom content while updating technical sections
 
 ## Configuration
 
-Customize your documentation generation through settings (`Ctrl+,`):
+Customize through VS Code settings (`settings.json`):
 ```json
-"ai-doc-generator": {
-  "apiToken": "your-deepseek-api-key",
-  "autoUpdateOnCommit": true,
-  "excludePatterns": ["node_modules/**", "dist/**"],
-  "ai": {
-    "defaultModel": "tngtech/deepseek-r1t2-chimera:free",
-    "maxTokens": 8192,
-    "temperature": 0.1
-  }
+{
+  "ai-doc-generator.apiToken": "sk-your-key-here",
+  "ai-doc-generator.autoUpdateOnCommit": true,
+  "ai-doc-generator.excludePatterns": [
+    "node_modules/**",
+    "test/**",
+    ".github/**"
+  ],
+  "ai-doc-generator.ai.maxTokens": 8192,
+  "ai-doc-generator.ai.temperature": 0.1
 }
 ```
 
-## Example Outputs
+## Supported Technologies
 
-### README.md Includes:
-- Project description
-- Installation instructions
-- Usage examples
-- Features overview
-- Contributing guidelines
-- Badges and metadata
-
-### PROJECT_OVERVIEW.md Includes:
-- Complete API reference
-- Architecture diagrams
-- Technical specifications
-- Code examples
-- Error handling documentation
-- Performance characteristics
-
-## How It Works
-
-1. **Code Analysis**: The extension scans your project, excluding specified patterns
-2. **AI Processing**: Sends code context to DeepSeek R1T2 Chimera via OpenRouter API
-3. **Document Generation**: Creates comprehensive markdown files tailored to your project
-4. **Git Integration**: Optionally stages updated docs for your next commit
+| Language | Features | File Extensions |
+|----------|----------|-----------------|
+| TypeScript | Full AST parsing, JSDoc support | `.ts`, `.tsx` |
+| JavaScript | Function/class detection | `.js`, `.jsx` |
+| Python | Basic class/function analysis | `.py` |
+| Java | Class/method detection | `.java` |
+| C# | Class/method detection | `.cs` |
+| Go | Basic structure analysis | `.go` |
 
 ## Contributing
 
-We welcome contributions! Here's how to help:
+We welcome contributions! Please follow these steps:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+3. Commit your changes (`git commit -m 'Add some feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
@@ -107,8 +101,8 @@ code .
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-*This README was automatically generated with AI assistance. To update, run the documentation generator or make changes to the source code and commit.*
+*This README was automatically generated by the AI Documentation Generator extension. To update this documentation, run the generator or make changes to the source code and commit.*
