@@ -4,9 +4,13 @@ import { GitCommitIntegration } from './services/gitCommitIntegration';
 import { SettingsManager } from './utils/settingsManager';
 
 let gitCommitIntegration: GitCommitIntegration | undefined;
+let documentationGenerator: DocumentationGenerator | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('🤖 AI Documentation Generator extension is now active!');
+
+    // Initialize the documentation generator once
+    documentationGenerator = new DocumentationGenerator();
 
     // Command 1: Generate Full Documentation (Manual)
     const generateCommand = vscode.commands.registerCommand(
@@ -14,8 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
         async () => {
             try {
                 vscode.window.showInformationMessage('Generating documentation...');
-                const generator = new DocumentationGenerator();
-                await generator.generateAllDocumentation();
+                await documentationGenerator!.generateAllDocumentation();
                 vscode.window.showInformationMessage('✅ Documentation generated successfully!');
             } catch (error) {
                 console.error('Documentation generation failed:', error);
@@ -39,7 +42,34 @@ export function activate(context: vscode.ExtensionContext) {
             const config = vscode.workspace.getConfiguration('ai-doc-generator');
             const current = config.get<boolean>('autoUpdateOnCommit', false);
             await config.update('autoUpdateOnCommit', !current, vscode.ConfigurationTarget.Workspace);
+            
+            // Reinitialize git integration when toggled
+            if (!current && gitCommitIntegration) {
+                console.log('Enabling git commit integration...');
+            } else if (current && gitCommitIntegration) {
+                console.log('Disabling git commit integration...');
+            }
+            
             vscode.window.showInformationMessage(`Auto-update on commit: ${!current ? 'enabled' : 'disabled'}`);
+        }
+    );
+
+    // Command 4: Manually trigger documentation update after commit
+    const updateAfterCommitCommand = vscode.commands.registerCommand(
+        'ai-doc-generator.updateAfterCommit',
+        async () => {
+            try {
+                if (!gitCommitIntegration) {
+                    vscode.window.showErrorMessage('Git integration not initialized');
+                    return;
+                }
+                
+                vscode.window.showInformationMessage('Checking for recent commits and updating documentation...');
+                await gitCommitIntegration.manuallyTriggerUpdate();
+            } catch (error) {
+                console.error('Manual documentation update failed:', error);
+                vscode.window.showErrorMessage(`Failed to update documentation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
         }
     );
 
@@ -47,17 +77,30 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         generateCommand, 
         settingsCommand, 
-        toggleAutoUpdateCommand
+        toggleAutoUpdateCommand,
+        updateAfterCommitCommand
     );
     
-    // Initialize git integration (optional, based on settings)
-    const generator = new DocumentationGenerator();
-    gitCommitIntegration = new GitCommitIntegration(generator);
+    // Initialize git integration with the shared generator instance
+    gitCommitIntegration = new GitCommitIntegration(documentationGenerator);
+    context.subscriptions.push({
+        dispose: () => {
+            if (gitCommitIntegration) {
+                gitCommitIntegration.cleanup();
+            }
+        }
+    });
 
     // Set up status bar
     setupStatusBar(context);
 
-    vscode.window.showInformationMessage('🤖 AI Documentation Generator is ready! Start with "Generate Project Documentation"');
+    // Check if auto-update is enabled and show appropriate message
+    const autoUpdateEnabled = vscode.workspace.getConfiguration('ai-doc-generator').get<boolean>('autoUpdateOnCommit', false);
+    if (autoUpdateEnabled) {
+        vscode.window.showInformationMessage('🤖 AI Documentation Generator is ready with auto-update on commit enabled!');
+    } else {
+        vscode.window.showInformationMessage('🤖 AI Documentation Generator is ready! Start with "Generate Project Documentation"');
+    }
 }
 
 export function deactivate() {

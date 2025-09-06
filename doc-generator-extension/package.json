@@ -2,7 +2,7 @@
   "name": "ai-documentation-generator",
   "displayName": "AutoDoc - AI Documentation Generator",
   "description": "AI-powered VS Code/Cursor extension that automatically generates and maintains comprehensive project documentation using DeepSeek R1T2 Chimera AI model",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "publisher": "voznyye",
   "engines": {
     "vscode": "^1.80.0"
@@ -50,6 +50,12 @@
         "title": "Toggle Auto-Update Documentation on Commit",
         "category": "AI Doc Generator",
         "icon": "$(sync)"
+      },
+      {
+        "command": "ai-doc-generator.updateAfterCommit",
+        "title": "Update Documentation After Last Commit",
+        "category": "AI Doc Generator",
+        "icon": "$(git-commit)"
       }
     ],
     "configuration": {
@@ -99,6 +105,10 @@
         },
         {
           "command": "ai-doc-generator.toggleAutoUpdate"
+        },
+        {
+          "command": "ai-doc-generator.updateAfterCommit",
+          "when": "workspaceFolderCount != 0"
         }
       ]
     }
