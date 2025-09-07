@@ -55,6 +55,9 @@ export class DocumentationGenerator {
         const excludePatterns = SettingsManager.getExcludePatterns();
         const codeFiles = await this.getAllCodeFiles(workspacePath, excludePatterns);
         let fullAnalysis = '';
+        let totalTokens = 0;
+        const maxTokens = 120000; // Оставляем запас для API лимита 163840
+        const maxFileSize = 50000; // Максимальный размер файла в символах
 
         // Add project metadata
         const packageJsonPath = path.join(workspacePath, 'package.json');
@@ -73,23 +76,148 @@ export class DocumentationGenerator {
                     fullAnalysis += `- Dependencies: ${Object.keys(packageData.dependencies).join(', ')}\n`;
                 }
                 fullAnalysis += '\n';
+                totalTokens += fullAnalysis.length / 4; // Примерная оценка токенов
             } catch (error) {
                 console.error('Failed to parse package.json:', error);
             }
         }
 
-        // Analyze all relevant code files
-        for (const file of codeFiles) {
+        // Сортируем файлы по важности (основные файлы сначала)
+        const sortedFiles = this.prioritizeFiles(codeFiles, workspacePath);
+        
+        // Analyze code files with size and token limits
+        let processedFiles = 0;
+        const maxFiles = 50; // Ограничиваем количество файлов
+
+        for (const file of sortedFiles) {
+            if (processedFiles >= maxFiles) {
+                console.log(`Reached maximum file limit (${maxFiles}), skipping remaining files`);
+                break;
+            }
+
             try {
+                const stats = await fs.promises.stat(file);
+                
+                // Пропускаем слишком большие файлы
+                if (stats.size > maxFileSize) {
+                    console.log(`Skipping large file: ${file} (${stats.size} bytes)`);
+                    continue;
+                }
+
                 const content = await fs.promises.readFile(file, 'utf-8');
+                
+                // Проверяем лимит токенов
+                const estimatedTokens = content.length / 4;
+                if (totalTokens + estimatedTokens > maxTokens) {
+                    console.log(`Token limit reached, stopping analysis. Processed ${processedFiles} files.`);
+                    break;
+                }
+
                 const relativePath = path.relative(workspacePath, file);
-                fullAnalysis += `\n\n=== FILE: ${relativePath} ===\n${content}`;
+                
+                // Для больших файлов берем только ключевые части
+                const processedContent = this.extractKeyContent(content, file);
+                
+                fullAnalysis += `\n\n=== FILE: ${relativePath} ===\n${processedContent}`;
+                totalTokens += estimatedTokens;
+                processedFiles++;
+                
             } catch (error) {
                 console.error(`Failed to read file ${file}:`, error);
             }
         }
 
+        console.log(`Analysis complete: ${processedFiles} files processed, ~${Math.round(totalTokens)} tokens`);
         return fullAnalysis;
+    }
+
+    /**
+     * Prioritize files by importance (main files first)
+     */
+    private prioritizeFiles(files: string[], _workspacePath: string): string[] {
+        return files.sort((a, b) => {
+            const aName = path.basename(a).toLowerCase();
+            const bName = path.basename(b).toLowerCase();
+            
+            // Приоритет основным файлам
+            const priority = [
+                'main', 'index', 'app', 'server', 'client', 'config',
+                'package.json', 'tsconfig', 'webpack', 'setup'
+            ];
+            
+            const aPriority = priority.findIndex(p => aName.includes(p));
+            const bPriority = priority.findIndex(p => bName.includes(p));
+            
+            if (aPriority !== -1 && bPriority !== -1) {
+                return aPriority - bPriority;
+            }
+            if (aPriority !== -1) return -1;
+            if (bPriority !== -1) return 1;
+            
+            // Сортируем по размеру (меньшие файлы сначала)
+            try {
+                const aStats = fs.statSync(a);
+                const bStats = fs.statSync(b);
+                return aStats.size - bStats.size;
+            } catch {
+                return 0;
+            }
+        });
+    }
+
+    /**
+     * Extract key content from large files
+     */
+    private extractKeyContent(content: string, _filePath: string): string {
+        const maxLength = 2000; // Максимальная длина содержимого файла
+        
+        if (content.length <= maxLength) {
+            return content;
+        }
+
+        // Для больших файлов извлекаем ключевые части
+        const lines = content.split('\n');
+        const keyLines: string[] = [];
+        let currentLength = 0;
+
+        // Добавляем импорты и экспорты
+        for (const line of lines) {
+            if (currentLength > maxLength) break;
+            
+            const trimmed = line.trim();
+            if (trimmed.startsWith('import ') || 
+                trimmed.startsWith('export ') ||
+                trimmed.startsWith('from ') ||
+                trimmed.startsWith('class ') ||
+                trimmed.startsWith('function ') ||
+                trimmed.startsWith('interface ') ||
+                trimmed.startsWith('type ') ||
+                trimmed.startsWith('const ') ||
+                trimmed.startsWith('let ') ||
+                trimmed.startsWith('var ') ||
+                trimmed.startsWith('def ') ||
+                trimmed.startsWith('public ') ||
+                trimmed.startsWith('private ') ||
+                trimmed.includes('TODO') ||
+                trimmed.includes('FIXME') ||
+                trimmed.startsWith('//') ||
+                trimmed.startsWith('#') ||
+                trimmed.startsWith('/*') ||
+                trimmed.startsWith('*') ||
+                trimmed.startsWith('"""') ||
+                trimmed.startsWith("'''")) {
+                
+                keyLines.push(line);
+                currentLength += line.length;
+            }
+        }
+
+        if (keyLines.length === 0) {
+            // Если не нашли ключевых строк, берем начало файла
+            return content.substring(0, maxLength) + '\n\n... [FILE TRUNCATED] ...';
+        }
+
+        return keyLines.join('\n') + '\n\n... [KEY CONTENT EXTRACTED] ...';
     }
 
     /**

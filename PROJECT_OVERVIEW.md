@@ -7,168 +7,172 @@
 2. [Core Components](#core-components)
 3. [API Reference](#api-reference)
 4. [Configuration Options](#configuration-options)
-5. [Error Handling](#error-handling)
-6. [Performance Characteristics](#performance-characteristics)
-7. [Development Workflow](#development-workflow)
-8. [Contribution Guidelines](#contribution-guidelines)
+5. [Workflows & Data Flow](#workflows--data-flow)
+6. [Error Handling](#error-handling)
+7. [Performance Characteristics](#performance-characteristics)
+8. [Technical Specifications](#technical-specifications)
+9. [Code Examples](#code-examples)
+
+---
 
 ## System Architecture
 
-### High-Level Overview
+### Overview
+The documentation generator follows a modular architecture with three primary layers:
+
 ```
-[User Interface] -> [Commands] -> [Documentation Generator] 
-    -> [AI Service] -> [DeepSeek R1T2 Chimera API]
-    |
-    V
-[Git Integration] <-> [File System Watcher]
+[Presentation Layer] 
+    ↓
+[Business Logic Layer] 
+    ↓
+[Data Access Layer]
 ```
 
-### Data Flow
-1. User triggers documentation generation via VS Code command
-2. System analyzes entire codebase using CodeAnalyzer
-3. Generated context is sent to DeepSeek R1T2 Chimera via OpenRouter API
-4. AI processes request and returns formatted documentation
-5. System writes README.md and PROJECT_OVERVIEW.md to workspace
-6. Git integration optionally stages changes and monitors future commits
+### Component Diagram
+```mermaid
+graph TD
+    A[VS Code Extension] --> B[DocumentationGenerator]
+    B --> C[CodeAnalyzer]
+    B --> D[DeepSeekClient]
+    B --> E[GitCommitIntegration]
+    C --> F[FileUtils]
+    D --> G[SettingsManager]
+    E --> H[GitUtils]
+```
 
 ### Design Patterns
-- **Facade Pattern**: DocumentationGenerator provides simplified interface
-- **Observer Pattern**: GitCommitIntegration monitors file system changes
-- **Strategy Pattern**: Multiple analysis implementations for different file types
-- **Singleton Pattern**: SettingsManager handles global configuration
+1. **Facade Pattern**: `DocumentationGenerator` acts as facade for complex operations
+2. **Observer Pattern**: Git watchers monitor repository changes
+3. **Strategy Pattern**: Multiple analysis strategies for different file types
+4. **Singleton Pattern**: `SettingsManager` and `EnvironmentManager`
+
+---
 
 ## Core Components
 
-### 1. DocumentationGenerator (`src/services/documentationGenerator.ts`)
-Central coordinator for documentation generation process.
+### 1. DocumentationGenerator Class
+**Responsibilities**:  
+- Orchestrates documentation generation workflow
+- Coordinates code analysis and AI integration
 
+#### Methods
 ```typescript
 class DocumentationGenerator {
+  /**
+   * Generates both README.md and PROJECT_OVERVIEW.md
+   * @throws Error if API token not configured or workspace missing
+   */
   async generateAllDocumentation(): Promise<void>
-  private analyzeEntireCodebase(workspacePath: string): Promise<string>
-  private generateReadme(fullCodebaseAnalysis: string): Promise<string>
-  private generateProjectOverview(fullCodebaseAnalysis: string): Promise<string>
-  private callDeepSeekAPI(prompt: string): Promise<string>
-}
-```
 
-### 2. CodeAnalyzer (`src/analyzers/codeAnalyzer.ts`)
-Performs static code analysis across multiple languages.
+  /**
+   * Analyzes entire codebase and returns concatenated content
+   * @param workspacePath - Root directory of the project
+   * @returns String containing analyzed code content
+   */
+  private async analyzeEntireCodebase(workspacePath: string): Promise<string>
 
-```typescript
-class CodeAnalyzer {
-  async analyzeProject(
-    rootPath: string,
-    supportedLanguages: string[],
+  /**
+   * Retrieves all code files in workspace
+   * @param workspacePath - Project root path
+   * @param excludePatterns - Glob patterns to exclude
+   * @returns Array of file paths
+   */
+  private async getAllCodeFiles(
+    workspacePath: string,
     excludePatterns: string[]
-  ): Promise<AnalysisResult>
-  
-  private analyzeTypeScriptFile(filePath: string, content: string): AnalysisResult
-  private analyzeJavaScriptFile(filePath: string, content: string): AnalysisResult
-  private buildFileStructure(rootPath: string, excludePatterns: string[]): Promise<FileNode[]>
+  ): Promise<string[]>
 }
 ```
 
-### 3. GitCommitIntegration (`src/services/gitCommitIntegration.ts`)
-Handles automatic documentation updates on Git commits.
+### 2. CodeAnalyzer Class
+**Responsibilities**:  
+- Static code analysis across multiple languages
+- Extraction of code elements and metadata
 
-```typescript
-class GitCommitIntegration {
-  constructor(generator: DocumentationGenerator)
-  private setupCommitHooks(): void
-  private handlePostCommit(workspaceRoot: string): Promise<void>
-  async manuallyTriggerUpdate(): Promise<void>
-}
-```
+#### Key Features
+- Supports 11+ languages (TypeScript, Python, Java, etc.)
+- AST-based analysis for TypeScript/JavaScript
+- Regex-based fallback for other languages
+- Complexity calculation using cyclomatic complexity
 
-### 4. DeepSeekClient (`src/services/deepSeekClient.ts`)
-Wrapper for DeepSeek R1T2 Chimera API interactions.
+### 3. DeepSeekClient Class
+**Responsibilities**:  
+- Communication with DeepSeek R1T2 Chimera API
+- Prompt engineering for documentation generation
 
+#### Methods
 ```typescript
 class DeepSeekClient {
-  async generateDocumentation(prompt: string, codeContext: string): Promise<string>
-  async testConnection(): Promise<boolean>
-  getReadmePrompt(): string
-  getTechnicalOverviewPrompt(): string
+  /**
+   * Generates documentation content using AI
+   * @param prompt - Customized prompt for documentation type
+   * @param codeContext - Full codebase analysis
+   * @returns Generated documentation content
+   * @throws Error if API call fails
+   */
+  async generateDocumentation(
+    prompt: string,
+    codeContext: string
+  ): Promise<string>
 }
 ```
+
+### 4. GitCommitIntegration Class
+**Responsibilities**:  
+- Automatic documentation updates on git commits
+- Change detection and smart update triggering
+
+#### Lifecycle Hooks
+1. `pre-commit`: Checks for documentation updates
+2. `post-commit`: Triggers regeneration if needed
+3. `post-merge`: Handles merge scenarios
+
+---
 
 ## API Reference
 
-### CodeAnalyzer Methods
+### SettingsManager API
 
-#### `analyzeProject()`
+#### Methods
 ```typescript
-async analyzeProject(
-  rootPath: string,
-  supportedLanguages: string[],
-  excludePatterns: string[]
-): Promise<AnalysisResult>
-```
-**Parameters:**
-- `rootPath`: Absolute path to workspace root
-- `supportedLanguages`: Array of language identifiers (e.g., ['typescript', 'python'])
-- `excludePatterns`: Glob patterns to exclude from analysis
-
-**Returns:**
-```typescript
-interface AnalysisResult {
-  elements: CodeElement[];
-  dependencies: string[];
-  fileStructure: FileNode[];
-  metrics: {
-    linesOfCode: number;
-    complexity: number;
-  };
-  metadata?: {
-    projectName?: string;
-    version?: string;
-    description?: string;
-  };
+class SettingsManager {
+  /** Retrieve API token from persistent storage */
+  static getApiToken(): string | undefined
+  
+  /** Validate token against DeepSeek API */
+  static async validateToken(token: string): Promise<boolean>
+  
+  /** Get file exclusion patterns */
+  static getExcludePatterns(): string[]
 }
 ```
 
-### DocumentationGenerator Methods
+### FileUtils API
 
-#### `generateAllDocumentation()`
+#### Key Methods
 ```typescript
-async generateAllDocumentation(): Promise<void>
-```
-**Workflow:**
-1. Validates API token configuration
-2. Shows progress notification in VS Code
-3. Performs full codebase analysis
-4. Generates both README.md and PROJECT_OVERVIEW.md
-5. Writes files to workspace root
+class FileUtils {
+  /** Recursive directory scanner with pattern matching */
+  async findFiles(
+    rootPath: string,
+    pattern: RegExp | string,
+    options?: {
+      recursive?: boolean
+      includeDirectories?: boolean
+      maxDepth?: number
+    }
+  ): Promise<string[]>
 
-### GitCommitIntegration Methods
-
-#### `handlePostCommit()`
-```typescript
-private async handlePostCommit(workspaceRoot: string): Promise<void>
+  /** Secure file operations with checksum verification */
+  async writeFile(filePath: string, content: string): Promise<void>
+}
 ```
-**Logic Flow:**
-1. Checks if auto-update is enabled
-2. Determines if documentation needs updating
-3. Shows progress notification
-4. Generates new documentation
-5. Stages updated files in Git
+
+---
 
 ## Configuration Options
 
-### SettingsManager (`src/utils/settingsManager.ts`)
-**Persistent Configuration Values:**
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `apiToken` | string | - | DeepSeek API token (starts with "sk-") |
-| `autoUpdateOnCommit` | boolean | false | Enable automatic updates on Git commit |
-| `excludePatterns` | string[] | [...] | File patterns to exclude from analysis |
-| `ai.defaultModel` | string | "tngtech/deepseek-r1t2-chimera:free" | Default AI model |
-| `ai.maxTokens` | number | 8192 | Maximum tokens per AI request |
-| `ai.temperature` | number | 0.1 | AI creativity level (0-2) |
-
-**Example Configuration:**
+### VS Code Settings (settings.json)
 ```json
 {
   "ai-doc-generator.apiToken": "sk-...",
@@ -176,173 +180,170 @@ private async handlePostCommit(workspaceRoot: string): Promise<void>
   "ai-doc-generator.excludePatterns": [
     "node_modules/**",
     "dist/**",
-    "**/*.test.*"
-  ]
+    "*.test.*"
+  ],
+  "ai-doc-generator.ai.defaultModel": "tngtech/deepseek-r1t2-chimera:free",
+  "ai-doc-generator.ai.maxTokens": 8192,
+  "ai-doc-generator.ai.temperature": 0.1
 }
 ```
 
+### Environment Variables
+```bash
+OPENROUTER_API_KEY=sk-or-...
+```
+
+---
+
+## Workflows & Data Flow
+
+### Documentation Generation Workflow
+```mermaid
+sequenceDiagram
+    participant User
+    participant Extension
+    participant CodeAnalyzer
+    participant DeepSeekAPI
+    participant FileSystem
+    
+    User->>Extension: Generate Documentation
+    Extension->>CodeAnalyzer: analyzeEntireCodebase()
+    CodeAnalyzer->>FileSystem: Read code files
+    CodeAnalyzer-->>Extension: Analysis results
+    Extension->>DeepSeekAPI: generateDocumentation(README)
+    Extension->>DeepSeekAPI: generateDocumentation(PROJECT_OVERVIEW)
+    DeepSeekAPI-->>Extension: Generated content
+    Extension->>FileSystem: Write README.md
+    Extension->>FileSystem: Write PROJECT_OVERVIEW.md
+```
+
+### Git Integration Workflow
+```mermaid
+graph LR
+    A[Git Commit] --> B[Detect Changes]
+    B --> C{Significant Changes?}
+    C -->|Yes| D[Regenerate Docs]
+    C -->|No| E[Skip Update]
+    D --> F[Stage Updated Files]
+```
+
+---
+
 ## Error Handling
 
-### Error Types and Recovery
+### Error Types and Recovery Strategies
 
-| Error Scenario | Handling Mechanism | User Notification |
-|----------------|---------------------|-------------------|
-| Missing API Token | Exception thrown with guidance | Configuration prompt with "Set API Token" option |
-| API Request Failure | Retry logic (3 attempts) | Detailed error message with status code |
-| File Analysis Failure | Skip problematic files | Warning in output channel |
-| Git Integration Failure | Fallback to manual mode | Status bar notification with troubleshooting link |
-| Rate Limiting | Exponential backoff | "API Limit Exceeded" notification with timer |
+| Error Type | Handling Strategy | Recovery Action |
+|------------|-------------------|-----------------|
+| API Connection Failure | Exponential backoff retry | Validate token, show configuration prompt |
+| File System Errors | Graceful degradation | Skip problematic files, continue analysis |
+| Code Parsing Errors | Fallback to regex parsing | Log warning, partial analysis |
+| Git Integration Failures | Automatic disable | Notify user, maintain core functionality |
 
-### Troubleshooting Guide
+### Monitoring
+- Console logging with error codes
+- VS Code status bar notifications
+- Error telemetry (opt-in)
 
-1. **Documentation Generation Fails**
-   - Verify API token validity
-   - Check network connectivity to OpenRouter API
-   - Review output channel for detailed errors
-
-2. **Git Auto-Update Not Working**
-   - Ensure `.git` directory exists in workspace
-   - Verify extension has file system permissions
-   - Check `autoUpdateOnCommit` setting is enabled
-
-3. **Incomplete Code Analysis**
-   - Review exclude patterns in settings
-   - Check for large binary files in workspace
-   - Verify supported languages configuration
+---
 
 ## Performance Characteristics
 
-### Resource Utilization
-- **Memory Usage**: ~200MB baseline, peaks at ~500MB during analysis
-- **CPU Utilization**: Intensive during code parsing (TypeScript analysis)
-- **Network**: ~5MB per request to DeepSeek API
+### Metrics
+| Operation | Average Time | Complexity |
+|-----------|--------------|------------|
+| Codebase Analysis (10k LOC) | 8-12s | O(n) |
+| AI Documentation Generation | 15-30s | O(1) API call |
+| Git Change Detection | <1s | O(1) file watcher |
 
 ### Optimization Strategies
-1. **Incremental Analysis**: Only processes changed files after initial run
-2. **Debounced Updates**: 1.5s delay on Git watcher events
-3. **Selective Processing**: Skips binary and excluded files
-4. **Parallel Processing**: File analysis uses async concurrency
+1. **Selective Analysis**: Only analyze changed files for updates
+2. **Caching**: AST caching for unchanged files
+3. **Parallel Processing**: Concurrent file analysis
+4. **Debouncing**: Git watcher events debounced at 1.5s
 
 ### Limitations
-- Large monorepos (>10k files) may require increased memory
-- Complex TypeScript generics may not be fully analyzed
-- Python analysis limited to function/class declarations (no full AST parsing)
+- Maximum file size: 2MB (API limit)
+- Maximum context length: 16k tokens
+- Supported languages: 11 primary languages
 
-## Development Workflow
+---
 
-### Key Algorithms
+## Technical Specifications
 
-#### Code Analysis Workflow
-```mermaid
-graph TD
-  A[Start] --> B[Build File Structure]
-  B --> C[Filter by Extension]
-  C --> D[Parse Each File]
-  D --> E[Extract Elements]
-  E --> F[Generate Metadata]
-  F --> G[Calculate Metrics]
-  G --> H[Return Analysis Result]
-```
+### Requirements
+- Node.js ≥18.x
+- VS Code ≥1.85
+- Git ≥2.25 (for auto-update features)
 
-#### Git Integration Logic
-```typescript
-// Simplified commit handling logic
-function handleGitCommit() {
-  const changes = getChangedFiles();
-  if (changes.some(isCodeFile)) {
-    generateDocumentation();
-    if (config.autoStage) {
-      stageDocumentationFiles();
-    }
+### Dependencies
+```json
+{
+  "dependencies": {
+    "@types/vscode": "^1.85.0",
+    "simple-git": "^3.19.0",
+    "typescript": "^5.3.3"
   }
 }
 ```
 
-### Data Structures
+### Security Considerations
+1. API tokens stored in VS Code secure storage
+2. All network requests use HTTPS
+3. Content sanitization for AI prompts
+4. No persistent collection of code data
 
-#### CodeElement Interface
-```typescript
-interface CodeElement {
-  type: 'function' | 'class' | 'interface' | 'variable' | 'type' | 'enum' | 'module';
-  name: string;
-  description?: string;
-  parameters?: Parameter[];
-  returnType?: string;
-  visibility: 'public' | 'private' | 'protected';
-  location: {
-    file: string;
-    line: number;
-    column: number;
-  };
-  // ...additional properties
-}
-```
+---
 
-## Contribution Guidelines
+## Code Examples
 
-### Technical Specifications
-
-#### Prerequisites
-- Node.js v18+
-- VS Code Extension Development Setup
-- DeepSeek R1T2 Chimera API Token
-
-#### Development Setup
-```bash
-git clone https://github.com/your-repo/doc-generator-extension.git
-cd doc-generator-extension
-npm install
-npm run compile
-```
-
-### Testing Procedures
-1. **Unit Tests**: `npm test`
-2. **Integration Tests**:
-   - Manual verification of documentation generation
-   - Git commit simulation testing
-3. **Performance Testing**:
-   - Test with large codebases (>1000 files)
-   - Monitor memory usage during analysis
-
-### Code Standards
-- TypeScript strict mode enabled
-- ESLint with Airbnb base configuration
-- JSDoc comments for all public methods
-- 80% test coverage minimum
-
-### Extension Packaging
-```bash
-npm install -g vsce
-vsce package
-```
-
-### Release Checklist
-1. Update version in `package.json`
-2. Verify all tests pass
-3. Update CHANGELOG.md
-4. Create signed VSIX package
-5. Publish to VS Code Marketplace
-
-## Example Usage
-
-### Generating Documentation Programmatically
+### Initializing Documentation Generation
 ```typescript
 const generator = new DocumentationGenerator();
-await generator.generateAllDocumentation();
+
+// Manual trigger
+vscode.commands.registerCommand('generate-docs', async () => {
+  await generator.generateAllDocumentation();
+});
 ```
 
-### Manual Git Integration Trigger
+### Customizing Analysis
+```typescript
+// Custom exclude patterns
+SettingsManager.getExcludePatterns = () => [
+  'node_modules/**',
+  'dist/**',
+  'custom_exclude/**'
+];
+
+// Custom AI parameters
+SettingsManager.getAIConfig = () => ({
+  model: 'tngtech/deepseek-r1t2-chimera:free',
+  maxTokens: 4096,
+  temperature: 0.3
+});
+```
+
+### Handling Git Integration
 ```typescript
 const gitIntegration = new GitCommitIntegration(generator);
-await gitIntegration.manuallyTriggerUpdate();
+
+// Manual trigger after commit
+gitIntegration.manuallyTriggerUpdate();
 ```
 
-### Custom Analysis Configuration
+### Extending Language Support
 ```typescript
-const analyzer = new CodeAnalyzer();
-const result = await analyzer.analyzeProject(
-  '/path/to/project',
-  ['typescript', 'python'],
-  ['**/test/**', '**/mock/**']
-);
+// Add new file extensions
+class CustomCodeAnalyzer extends CodeAnalyzer {
+  private supportedExtensions = [
+    ...super.supportedExtensions,
+    '.scala',
+    '.kt'
+  ];
+  
+  analyzeSingleFile(filePath: string) {
+    // Custom analysis logic
+  }
+}
 ```

@@ -2,6 +2,10 @@
 
 # AI Documentation Generator 🤖
 
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Auto-Generated](https://img.shields.io/badge/docs-auto--generated-brightgreen.svg)
+![Last Updated](https://img.shields.io/badge/updated-2023-10-15-blue.svg)
+
 The AI Documentation Generator is a powerful VS Code extension that automatically creates comprehensive documentation for your projects using DeepSeek's advanced R1T2 Chimera AI model. Save hours of manual documentation work with AI-generated READMEs and technical overviews that stay in sync with your codebase.
 
 ## Features ✨
